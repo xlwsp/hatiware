@@ -3,26 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>よけるゲーム - 完全版</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <title>はちわれゴミ避けゲーム</title>
+    <link rel="stylesheet" href="style.css?v=5">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
     <div id="game-container">
-        <div id="score">SCORE: 0 | DIST: 0m</div>
-        <button id="pause-btn" style="display: none;">PAUSE</button>
-        <div id="overlay">
-            <button id="start-btn">START</button>
-            <div id="countdown-text"></div>
-            <div id="ranking-board" style="display: none;">
-                <h2 style="color:#FFD700">🏆 RANKING</h2>
-                <ul id="ranking-list"></ul>
-                <button id="retry-btn">RETRY</button>
-            </div>
-        </div>
         <canvas id="gameCanvas"></canvas>
+        <div id="score">SCORE: 0 | 距離: 0m</div>
+        <div id="countdown-text"></div>
+        <button id="start-btn">ゲームスタート</button>
+        <button id="pause-btn">PAUSE</button>
+
+        <div id="ranking-board">
+            <h2>ランキング</h2>
+            <ul id="ranking-list"></ul>
+            <button id="retry-btn">もう一度あそぶ</button>
+        </div>
     </div>
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=5"></script>
 </body>
 </html>
