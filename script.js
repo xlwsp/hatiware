@@ -7,6 +7,7 @@ const firebaseConfig = {
   appId: "1:682427412458:web:29820bcf58816565834c93"
 };
 
+// 初期化
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -32,7 +33,7 @@ playerImg.src = 'player.png';
 const player = { x: 160, y: 480, width: 80, height: 80 }; 
 let enemies = [];
 
-// 一時停止ボタン
+// 一時停止
 pauseBtn.onclick = () => {
     if (gameState === "PLAYING") {
         gameState = "PAUSED";
@@ -81,25 +82,29 @@ canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
 }, { passive: false });
 
-// ランキング読み込み専用
-async function refreshRanking() {
+// ランキング表示（NaN対策版）
+async function showRanking() {
     try {
         const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
         rankingList.innerHTML = "";
+        
         if (snap.empty) {
-            rankingList.innerHTML = "<li>データがありません</li>";
+            rankingList.innerHTML = "<li>ランキングデータがありません</li>";
         } else {
             snap.forEach((doc, i) => {
-                const d = doc.data();
+                const data = doc.data();
                 const li = document.createElement("li");
-                const dScore = Math.floor(d.distance) || 0;
-                li.innerHTML = `<span>${i+1}. ${d.name || "Player"}</span> <span>${dScore}m</span>`;
+                // NaNにならないよう、数値変換を徹底
+                const d = Math.floor(Number(data.distance)) || 0;
+                li.innerHTML = `<span>${i+1}. ${data.name || "匿名"}</span> <span>${d}m</span>`;
                 rankingList.appendChild(li);
             });
         }
+        rankingBoard.style.display = "block";
     } catch (e) {
-        console.error("Fetch Error:", e);
-        rankingList.innerHTML = "<li>接続エラー</li>";
+        console.error("ランキング取得エラー:", e);
+        rankingList.innerHTML = "<li>ランキングの読み込みに失敗しました</li>";
+        rankingBoard.style.display = "block";
     }
 }
 
@@ -108,36 +113,41 @@ async function handleGameOver(finalDist) {
     gameState = "GAMEOVER";
     pauseBtn.style.display = "none";
     
-    let currentDist = Math.floor(finalDist) || 0;
-    // localStorageは文字列で入るので必ず数値化
-    let bestScore = parseInt(localStorage.getItem("bestDistance") || "-1");
-    let playerName = localStorage.getItem("playerName");
+    // スコアを確実に数値化
+    const currentDist = Math.floor(Number(finalDist)) || 0;
+    
+    // localStorageからベストスコアを取得。未設定なら0
+    let bestScore = Math.floor(Number(localStorage.getItem("bestDistance"))) || 0;
+    let playerName = localStorage.getItem("playerName") || "";
 
-    // スコア送信の条件：ハイスコア時、または初回
-    if (currentDist > bestScore) {
-        // 名前がない場合はここで強制入力
-        if (!playerName || playerName === "null" || playerName === "") {
-            playerName = prompt("新記録です！ランキングに載せる名前を入力してください:") || "Player";
-            localStorage.setItem("playerName", playerName);
-        }
+    // ハイスコア更新時（または初回）
+    if (currentDist > bestScore || bestScore === 0) {
+        // 名前が未設定、または更新時に名前を変えたい場合を考慮
+        const newName = prompt(`新記録 ${currentDist}m！\nランキングに載せる名前を入力してください:`, playerName || "Player");
         
+        if (newName) {
+            playerName = newName;
+            localStorage.setItem("playerName", playerName);
+        } else if (!playerName) {
+            playerName = "Player"; // キャンセルされた場合のデフォルト
+        }
+
         localStorage.setItem("bestDistance", currentDist);
 
         try {
-            // 保存が終わるまで待機
+            // Firebaseへ保存（完了を待つ）
             await db.collection("scores").add({
                 name: playerName,
                 distance: currentDist,
-                date: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         } catch (e) {
-            console.error("Save Error:", e);
+            console.error("スコア保存エラー:", e);
         }
     }
 
-    // 保存が終わってからランキングを読み込んで表示
-    await refreshRanking();
-    rankingBoard.style.display = "block";
+    // 最新のランキングを表示
+    await showRanking();
 }
 
 document.getElementById("retry-btn").onclick = () => location.reload();
@@ -153,8 +163,8 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     distance += 0.2;
-    let displayDist = Math.floor(distance) || 0;
-    scoreElement.innerText = `SCORE: ${score} | DIST: ${displayDist}m`;
+    const dDisplay = Math.floor(distance) || 0;
+    scoreElement.innerText = `SCORE: ${score} | DIST: ${dDisplay}m`;
 
     ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
 
