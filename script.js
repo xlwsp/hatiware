@@ -11,12 +11,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 window.onload = function() {
-    // --- BGM設定 (ひとりごつ) ---
+    // BGM設定
     const bgm = new Audio('bgm.mp3');
-    bgm.loop = true; // 基本の無限ループ
+    bgm.loop = true;
     bgm.volume = 0.5;
-
-    // ループの確実性を上げるための処理
     bgm.addEventListener('ended', function() {
         this.currentTime = 0;
         this.play();
@@ -33,7 +31,6 @@ window.onload = function() {
     const rankingBoard = document.getElementById("ranking-board");
     const rankingList = document.getElementById("ranking-list");
 
-    // 音量スライダーの監視
     volumeSlider.addEventListener("input", (e) => {
         bgm.volume = e.target.value;
     });
@@ -51,11 +48,8 @@ window.onload = function() {
     const enemyImg = new Image(); enemyImg.src = 'gomi.png?v=' + v; 
     const bgImg = new Image(); bgImg.src = 'haikei.png?v=' + v;
 
-    // 当たり判定：65 (少し小さめ)
     const player = { x: 167, y: 480, width: 65, height: 65 }; 
     let enemies = [];
-
-    // 見た目のサイズ：90 (大きすぎずちょうどいい)
     const playerVisualSize = 90; 
     const enemyVisualSize = 90;
 
@@ -149,7 +143,6 @@ window.onload = function() {
 
     async function handleGameOver(finalDist) {
         gameState = "GAMEOVER";
-        // 負けてもBGMは流したままにする
         pauseBtn.style.display = "none";
         const currentDist = Math.floor(finalDist);
         let bestScore = Math.floor(Number(localStorage.getItem("bestDistance"))) || 0;
@@ -175,11 +168,12 @@ window.onload = function() {
         if (gameState !== "PLAYING") return;
         enemies.push({ x: Math.random() * (canvas.width - 65), y: -100, w: 65, h: 65 });
     }
-    setInterval(spawn, 800); // 降る間隔を少し広めに
+    setInterval(spawn, 800);
 
     function gameLoop() {
         if (gameState !== "PLAYING") return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 背景を0,0からキッチリ描画
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
         const pOffset = (playerVisualSize - player.width) / 2;
