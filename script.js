@@ -9,7 +9,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-db.settings({ cacheSizeBytes: 0 }); // LINE対策
+db.settings({ cacheSizeBytes: 0 });
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -21,28 +21,24 @@ const rankingBoard = document.getElementById("ranking-board");
 const rankingList = document.getElementById("ranking-list");
 
 canvas.width = 400;
-canvas.height = 550; 
+canvas.height = 600; 
 
 let gameState = "STARTING";
 let score = 0;
 let distance = 0;
 let enemySpeed = 5;
 
-// 画像とキャッシュ回避設定
 const v = new Date().getTime();
 const playerImg = new Image(); playerImg.src = 'player.png?v=' + v; 
 const enemyImg = new Image(); enemyImg.src = 'gomi.png?v=' + v; 
-const bgImg = new Image(); bgImg.src = 'haikei.png?v=' + v;
 
-const player = { x: 160, y: 420, width: 80, height: 80 }; 
+// プレイヤー位置を元の座標 (y: 480) に戻しました
+const player = { x: 160, y: 480, width: 80, height: 80 }; 
 let enemies = [];
-let bgY = 0;
-const scrollSpeed = 2; // 背景が下に流れる速さ
 
 let userUUID = localStorage.getItem("userUUID") || 'u_' + Math.random().toString(36).substr(2, 9);
 localStorage.setItem("userUUID", userUUID);
 
-// --- ボタン操作 ---
 startBtn.onclick = () => {
     startBtn.style.display = "none";
     startCountdown();
@@ -77,7 +73,6 @@ function startCountdown() {
     }, 1000);
 }
 
-// --- 移動処理 ---
 function move(clientX) {
     if (gameState !== "PLAYING") return;
     const rect = canvas.getBoundingClientRect();
@@ -91,7 +86,6 @@ canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
 }, { passive: false });
 
-// --- ランキング処理 ---
 async function showRanking() {
     try {
         const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
@@ -133,13 +127,12 @@ async function handleGameOver(finalDist) {
 
 document.getElementById("retry-btn").onclick = () => location.reload();
 
-// --- メインループ ---
 function spawn() {
     if (gameState !== "PLAYING") return;
+    // 当たり判定と見た目を元のサイズ (80x80) に戻しました
     enemies.push({ 
-        x: Math.random() * (canvas.width - 40), 
-        y: -90, w: 40, h: 40, visualSize: 90, 
-        angle: 0, rotSpeed: (Math.random() - 0.5) * 0.15 
+        x: Math.random() * (canvas.width - 80), 
+        y: -80, w: 80, h: 80 
     });
 }
 setInterval(spawn, 500);
@@ -148,26 +141,13 @@ function gameLoop() {
     if (gameState !== "PLAYING") return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. 背景の描画 (ループスクロール)
-    bgY += scrollSpeed;
-    if (bgY >= canvas.height) bgY = 0;
-    ctx.drawImage(bgImg, 0, bgY, canvas.width, canvas.height);
-    ctx.drawImage(bgImg, 0, bgY - canvas.height, canvas.width, canvas.height);
-
-    // 2. プレイヤーの描画
     ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
 
-    // 3. ゴミの描画
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
         e.y += enemySpeed;
-        e.angle += e.rotSpeed;
 
-        ctx.save();
-        ctx.translate(e.x + e.w / 2, e.y + e.h / 2); 
-        ctx.rotate(e.angle);
-        ctx.drawImage(enemyImg, -e.visualSize / 2, -e.visualSize / 2, e.visualSize, e.visualSize);
-        ctx.restore();
+        ctx.drawImage(enemyImg, e.x, e.y, e.w, e.h);
 
         if (player.x < e.x + e.w && player.x + player.width > e.x &&
             player.y < e.y + e.h && player.y + player.height > e.y) {
@@ -175,11 +155,11 @@ function gameLoop() {
             return;
         }
 
-        if (e.y > canvas.height + 100) {
+        if (e.y > canvas.height) {
             enemies.splice(i, 1);
             i--;
             score++;
-            enemySpeed += 0.05;
+            enemySpeed += 0.1;
         }
     }
 
@@ -188,13 +168,8 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// 読み込み完了時の初期表示
-let loaded = 0;
-function check() {
-    loaded++;
-    if (loaded === 3) {
-        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+playerImg.onload = enemyImg.onload = () => {
+    if (gameState === "STARTING") {
         ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
     }
-}
-playerImg.onload = enemyImg.onload = bgImg.onload = check;
+};

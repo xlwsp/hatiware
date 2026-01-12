@@ -2,7 +2,7 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #000;
+    background-color: #333;
     font-family: 'Arial', sans-serif;
     display: flex;
     justify-content: center;
@@ -13,11 +13,11 @@ body {
 #game-container {
     position: relative;
     width: 400px;
-    height: 550px;
+    height: 600px; /* 元の高さに戻しました */
 }
 
 #gameCanvas {
-    background: #000; /* 緑を削除 */
+    background: linear-gradient(to bottom, #2ecc71, #27ae60);
     width: 100%;
     height: 100%;
     display: block;
@@ -76,7 +76,6 @@ body {
     border-radius: 15px;
     display: none;
     text-align: center;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
 #ranking-list {
