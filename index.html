@@ -2,14 +2,21 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>よけるゲーム - シンプル版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>よけるゲーム - 完全版</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div id="score">Score: 0 | Dist: 0m</div>
-    <canvas id="gameCanvas"></canvas>
-
-    <script type="module" src="script.js"></script>
+    <div id="game-container">
+        <div id="score">SCORE: 0 | DIST: 0m</div>
+        <div id="overlay">
+            <button id="start-btn">START</button>
+            <div id="countdown-text"></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>

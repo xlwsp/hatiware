@@ -1,6 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyDjYZHcGo6RiPVHlZHFFoXcMoFsx4N6d5U",
   authDomain: "hatiware-ac9f4.firebaseapp.com",
@@ -10,83 +7,131 @@ const firebaseConfig = {
   appId: "1:682427412458:web:29820bcf58816565834c93"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreElement = document.getElementById("score");
+const startBtn = document.getElementById("start-btn");
+const countdownText = document.getElementById("countdown-text");
 
-// 縦長の解像度
 canvas.width = 400;
 canvas.height = 600;
 
+// ゲーム状態管理
+let gameState = "STARTING"; // STARTING, COUNTDOWN, PLAYING, GAMEOVER
 let score = 0;
 let distance = 0;
-let gameOver = false;
 let enemySpeed = 5;
-
-// 自機画像
 const playerImg = new Image();
 playerImg.src = 'player.png'; 
-const player = { x: 170, y: 500, width: 60, height: 60 };
+const player = { x: 170, y: 510, width: 60, height: 60 };
+let enemies = [];
 
-const enemies = [];
+// --- スタートボタンの処理 ---
+startBtn.onclick = () => {
+    startBtn.style.display = "none";
+    startCountdown();
+};
 
-// 操作を一本化
-function movePlayer(clientX) {
+function startCountdown() {
+    gameState = "COUNTDOWN";
+    let count = 3;
+    countdownText.innerText = count;
+    
+    const timer = setInterval(() => {
+        count--;
+        if (count <= 0) {
+            clearInterval(timer);
+            countdownText.innerText = "";
+            gameState = "PLAYING";
+            gameLoop();
+        } else {
+            countdownText.innerText = count;
+        }
+    }, 1000);
+}
+
+// --- 操作系 ---
+function move(clientX) {
+    if (gameState !== "PLAYING") return;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const x = (clientX - rect.left) * scaleX - player.width / 2;
     player.x = Math.max(0, Math.min(canvas.width - player.width, x));
 }
-
-canvas.addEventListener("mousemove", (e) => movePlayer(e.clientX));
+canvas.addEventListener("mousemove", (e) => move(e.clientX));
 canvas.addEventListener("touchmove", (e) => {
-    movePlayer(e.touches[0].clientX);
+    move(e.touches[0].clientX);
     e.preventDefault();
 }, { passive: false });
 
-async function saveScore(dist) {
-    const name = prompt(`GAME OVER!\n距離: ${dist}m\nランキング用ネーム:`) || "Player";
-    try {
-        await addDoc(collection(db, "scores"), { name: name, distance: dist, date: new Date() });
-        const q = query(collection(db, "scores"), orderBy("distance", "desc"), limit(5));
-        const snap = await getDocs(q);
-        let msg = "🏆 TOP 5 🏆\n";
-        snap.forEach((doc, i) => msg += `${i+1}. ${doc.data().name}: ${doc.data().distance}m\n`);
-        alert(msg);
-    } catch (e) { console.error(e); }
+// --- スコア・ランキング処理 ---
+async function handleGameOver(finalDist) {
+    gameState = "GAMEOVER";
+    
+    // 端末に保存されている過去の記録を呼び出し
+    let bestScore = localStorage.getItem("bestDistance") || 0;
+    let playerName = localStorage.getItem("playerName");
+
+    if (finalDist > bestScore) {
+        // ハイスコア更新時のみFirebaseに保存
+        if (!playerName) {
+            playerName = prompt("ハイスコア更新！お名前を入力してください:") || "Player";
+            localStorage.setItem("playerName", playerName);
+        } else {
+            alert(`自己ベスト更新！ (${finalDist}m)`);
+        }
+        
+        localStorage.setItem("bestDistance", finalDist);
+        
+        try {
+            await db.collection("scores").add({
+                name: playerName,
+                distance: finalDist,
+                date: new Date()
+            });
+        } catch (e) { console.error(e); }
+    } else {
+        alert(`GAME OVER\n今回の記録: ${finalDist}m\n(自己ベスト: ${bestScore}m)`);
+    }
+
+    // ランキング取得
+    const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
+    let list = "🏆 世界ランキング TOP 5\n";
+    snap.forEach((doc, i) => {
+        list += `${i+1}. ${doc.data().name}: ${doc.data().distance}m\n`;
+    });
+    alert(list);
     location.reload();
 }
 
 function spawn() {
-    if (gameOver) return;
-    enemies.push({ x: Math.random() * (canvas.width - 35), y: -40, w: 35, h: 35 });
+    if (gameState !== "PLAYING") return;
+    enemies.push({ x: Math.random() * (canvas.width - 40), y: -40, w: 40, h: 40 });
 }
+setInterval(spawn, 500);
 
-function loop() {
-    if (gameOver) return;
+function gameLoop() {
+    if (gameState !== "PLAYING") return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     distance += 0.2;
     scoreElement.innerText = `SCORE: ${score} | DIST: ${Math.floor(distance)}m`;
 
-    // 自機描画
     ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
 
-    // 敵描画
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
         e.y += enemySpeed;
-        ctx.fillStyle = "#FF4500";
+        ctx.fillStyle = "red";
         ctx.fillRect(e.x, e.y, e.w, e.h);
 
-        // 判定
         if (player.x < e.x + e.w && player.x + player.width > e.x &&
             player.y < e.y + e.h && player.y + player.height > e.y) {
-            gameOver = true;
-            saveScore(Math.floor(distance));
+            handleGameOver(Math.floor(distance));
+            return;
         }
 
         if (e.y > canvas.height) {
@@ -96,8 +141,8 @@ function loop() {
             enemySpeed += 0.05;
         }
     }
-    requestAnimationFrame(loop);
+    requestAnimationFrame(gameLoop);
 }
 
-setInterval(spawn, 500);
-loop();
+// 初期描画（スタート前にプレイヤーだけ出しておく）
+ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
