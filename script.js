@@ -28,17 +28,39 @@ let score = 0;
 let distance = 0;
 let enemySpeed = 5;
 
-const v = new Date().getTime();
-const playerImg = new Image(); playerImg.src = 'player.png?v=' + v; 
-const enemyImg = new Image(); enemyImg.src = 'gomi.png?v=' + v; 
+// --- 画像の設定 ---
+const v = new Date().getTime(); // LINE等のキャッシュ対策
+const playerImg = new Image();
+playerImg.src = 'player.png?v=' + v; // ハチワレの画像
+const enemyImg = new Image();
+enemyImg.src = 'gomi.png?v=' + v;   // ゴミ袋の画像
 
-// プレイヤー位置を元の座標 (y: 480) に戻しました
+// プレイヤーの配置 (元に戻しました)
 const player = { x: 160, y: 480, width: 80, height: 80 }; 
 let enemies = [];
 
+// ユーザー保存用
 let userUUID = localStorage.getItem("userUUID") || 'u_' + Math.random().toString(36).substr(2, 9);
 localStorage.setItem("userUUID", userUUID);
 
+// --- 読み込み完了チェック ---
+let imagesLoaded = 0;
+function imageLoaded() {
+    imagesLoaded++;
+    // 両方の画像が読み込まれたら最初の画面を描画
+    if (imagesLoaded === 2 && gameState === "STARTING") {
+        drawInitial();
+    }
+}
+playerImg.onload = imageLoaded;
+enemyImg.onload = imageLoaded;
+
+function drawInitial() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+}
+
+// --- ボタン・操作 ---
 startBtn.onclick = () => {
     startBtn.style.display = "none";
     startCountdown();
@@ -86,6 +108,7 @@ canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
 }, { passive: false });
 
+// --- ランキング・終了処理 ---
 async function showRanking() {
     try {
         const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
@@ -127,13 +150,11 @@ async function handleGameOver(finalDist) {
 
 document.getElementById("retry-btn").onclick = () => location.reload();
 
+// --- ゲームループ ---
 function spawn() {
     if (gameState !== "PLAYING") return;
-    // 当たり判定と見た目を元のサイズ (80x80) に戻しました
-    enemies.push({ 
-        x: Math.random() * (canvas.width - 80), 
-        y: -80, w: 80, h: 80 
-    });
+    // ゴミ袋のサイズ (80x80)
+    enemies.push({ x: Math.random() * (canvas.width - 80), y: -80, w: 80, h: 80 });
 }
 setInterval(spawn, 500);
 
@@ -141,14 +162,17 @@ function gameLoop() {
     if (gameState !== "PLAYING") return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // プレイヤー描画
     ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
 
+    // ゴミ描画
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i];
         e.y += enemySpeed;
 
         ctx.drawImage(enemyImg, e.x, e.y, e.w, e.h);
 
+        // 当たり判定
         if (player.x < e.x + e.w && player.x + player.width > e.x &&
             player.y < e.y + e.h && player.y + player.height > e.y) {
             handleGameOver(distance);
@@ -167,9 +191,3 @@ function gameLoop() {
     scoreElement.innerText = `SCORE: ${score} | DIST: ${Math.floor(distance)}m`;
     requestAnimationFrame(gameLoop);
 }
-
-playerImg.onload = enemyImg.onload = () => {
-    if (gameState === "STARTING") {
-        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-    }
-};

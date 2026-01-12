@@ -13,7 +13,7 @@ body {
 #game-container {
     position: relative;
     width: 400px;
-    height: 600px; /* 元の高さに戻しました */
+    height: 600px;
 }
 
 #gameCanvas {
