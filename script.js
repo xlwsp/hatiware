@@ -7,7 +7,6 @@ const firebaseConfig = {
   appId: "1:682427412458:web:29820bcf58816565834c93"
 };
 
-// 初期化
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -27,13 +26,18 @@ let gameState = "STARTING";
 let score = 0;
 let distance = 0;
 let enemySpeed = 5;
-
 const playerImg = new Image();
 playerImg.src = 'player.png'; 
 const player = { x: 160, y: 480, width: 80, height: 80 }; 
 let enemies = [];
 
-// 一時停止
+// 端末固有のIDを生成または取得（1端末1データ用）
+let userUUID = localStorage.getItem("userUUID");
+if (!userUUID) {
+    userUUID = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem("userUUID", userUUID);
+}
+
 pauseBtn.onclick = () => {
     if (gameState === "PLAYING") {
         gameState = "PAUSED";
@@ -82,71 +86,62 @@ canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
 }, { passive: false });
 
-// ランキング表示（NaN対策版）
+// ランキング表示
 async function showRanking() {
     try {
         const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
         rankingList.innerHTML = "";
         
         if (snap.empty) {
-            rankingList.innerHTML = "<li>ランキングデータがありません</li>";
+            rankingList.innerHTML = "<li>1位. データなし</li>";
         } else {
-            snap.forEach((doc, i) => {
+            let i = 0;
+            snap.forEach((doc) => {
                 const data = doc.data();
                 const li = document.createElement("li");
-                // NaNにならないよう、数値変換を徹底
+                // 数値変換を徹底
                 const d = Math.floor(Number(data.distance)) || 0;
-                li.innerHTML = `<span>${i+1}. ${data.name || "匿名"}</span> <span>${d}m</span>`;
+                li.innerHTML = `<span>${i + 1}位. ${data.name || "Player"}</span> <span>${d}m</span>`;
                 rankingList.appendChild(li);
+                i++;
             });
         }
         rankingBoard.style.display = "block";
     } catch (e) {
-        console.error("ランキング取得エラー:", e);
-        rankingList.innerHTML = "<li>ランキングの読み込みに失敗しました</li>";
-        rankingBoard.style.display = "block";
+        console.error("Rank Error:", e);
+        rankingList.innerHTML = "<li>ランキング取得失敗</li>";
     }
 }
 
-// ゲームオーバー処理
+// ゲームオーバー
 async function handleGameOver(finalDist) {
     gameState = "GAMEOVER";
     pauseBtn.style.display = "none";
     
-    // スコアを確実に数値化
     const currentDist = Math.floor(Number(finalDist)) || 0;
-    
-    // localStorageからベストスコアを取得。未設定なら0
     let bestScore = Math.floor(Number(localStorage.getItem("bestDistance"))) || 0;
     let playerName = localStorage.getItem("playerName") || "";
 
-    // ハイスコア更新時（または初回）
-    if (currentDist > bestScore || bestScore === 0) {
-        // 名前が未設定、または更新時に名前を変えたい場合を考慮
-        const newName = prompt(`新記録 ${currentDist}m！\nランキングに載せる名前を入力してください:`, playerName || "Player");
+    // ハイスコアを更新した時だけ処理
+    if (currentDist > bestScore) {
+        const newName = prompt(`自己ベスト更新！ ${currentDist}m\nランキングの名前を入力:`, playerName || "Player");
+        playerName = newName || playerName || "Player";
         
-        if (newName) {
-            playerName = newName;
-            localStorage.setItem("playerName", playerName);
-        } else if (!playerName) {
-            playerName = "Player"; // キャンセルされた場合のデフォルト
-        }
-
+        localStorage.setItem("playerName", playerName);
         localStorage.setItem("bestDistance", currentDist);
 
         try {
-            // Firebaseへ保存（完了を待つ）
-            await db.collection("scores").add({
+            // .doc(userUUID).set で特定のドキュメントを「上書き」する（1端末1データ）
+            await db.collection("scores").doc(userUUID).set({
                 name: playerName,
                 distance: currentDist,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         } catch (e) {
-            console.error("スコア保存エラー:", e);
+            console.error("Save Error:", e);
         }
     }
 
-    // 最新のランキングを表示
     await showRanking();
 }
 
