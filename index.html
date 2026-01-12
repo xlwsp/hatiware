@@ -4,14 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>はちわれゴミ避けゲーム</title>
-    <link rel="stylesheet" href="style.css?v=100">
+    <link rel="stylesheet" href="style.css?v=1000">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="score">SCORE: 0 | DIST: 0m</div>
+        <div id="score">SCORE: 0 | 距離: 0m</div>
+        
+        <div id="volume-control">
+            <span>🔊</span>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+        </div>
+
         <div id="countdown-text"></div>
         <button id="start-btn">ゲームスタート</button>
         <button id="pause-btn">PAUSE</button>
@@ -22,6 +28,6 @@
         </div>
         <button id="retry-btn" style="display:none;">もう一度あそぶ</button>
     </div>
-    <script src="script.js?v=501"></script>
+    <script src="script.js?v=1000"></script>
 </body>
 </html>
