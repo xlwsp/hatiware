@@ -32,6 +32,7 @@ playerImg.src = 'player.png';
 const player = { x: 160, y: 480, width: 80, height: 80 }; 
 let enemies = [];
 
+// 一時停止
 pauseBtn.onclick = () => {
     if (gameState === "PLAYING") {
         gameState = "PAUSED";
@@ -80,58 +81,57 @@ canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
 }, { passive: false });
 
-// --- ランキング表示用の共通関数 ---
-async function updateRankingDisplay() {
+// ランキング表示
+async function displayRanking() {
     try {
         const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
         rankingList.innerHTML = "";
         if (snap.empty) {
-            rankingList.innerHTML = "<li>データがありません</li>";
+            rankingList.innerHTML = "<li>ランキングがありません</li>";
+        } else {
+            snap.forEach((doc, i) => {
+                const d = doc.data();
+                const li = document.createElement("li");
+                const dScore = (isNaN(d.distance) || d.distance === undefined) ? 0 : d.distance;
+                li.innerHTML = `<span>${i+1}. ${d.name || "Player"}</span> <span>${Math.floor(dScore)}m</span>`;
+                rankingList.appendChild(li);
+            });
         }
-        snap.forEach((doc, i) => {
-            const d = doc.data();
-            const li = document.createElement("li");
-            const dScore = isNaN(parseInt(d.distance)) ? 0 : parseInt(d.distance);
-            li.innerHTML = `<span>${i+1}. ${d.name || "Unknown"}</span> <span>${dScore}m</span>`;
-            rankingList.appendChild(li);
-        });
-    } catch (e) { console.error("Ranking Fetch Error:", e); }
+        rankingBoard.style.display = "block";
+    } catch (e) {
+        console.error("Ranking Error:", e);
+    }
 }
 
+// ゲームオーバー処理
 async function handleGameOver(finalDist) {
     gameState = "GAMEOVER";
     pauseBtn.style.display = "none";
     
-    // 現在のスコアを確実に数値化
     let currentDist = Math.floor(finalDist) || 0;
-    if (isNaN(currentDist)) currentDist = 0;
-
-    // 過去のベストを数値化
     let bestScore = parseInt(localStorage.getItem("bestDistance"));
-    if (isNaN(bestScore)) bestScore = -1; // 初回は確実にハイスコアにするため -1
+    if (isNaN(bestScore)) bestScore = -1; // 初回プレイ用
 
     let playerName = localStorage.getItem("playerName");
 
-    // スコアが0より大きければハイスコア判定（初回含む）
+    // 初回プレイまたはハイスコア更新時
     if (currentDist > bestScore) {
         if (!playerName) {
-            playerName = prompt("初記録・ハイスコア更新！名前を入力:") || "Player";
+            // ★ここでお名前を入力させます
+            playerName = prompt("初プレイ・ハイスコア更新！\nランキングに載せるお名前を入力してください:") || "Player";
             localStorage.setItem("playerName", playerName);
         }
         localStorage.setItem("bestDistance", currentDist);
         try {
-            // 保存が終わるまで待つ (await)
             await db.collection("scores").add({
                 name: playerName,
                 distance: currentDist,
                 date: new Date()
             });
-        } catch (e) { console.error("Firebase Save Error:", e); }
+        } catch (e) { console.error("Save Error:", e); }
     }
 
-    // 最新のランキングを取得して表示
-    await updateRankingDisplay();
-    rankingBoard.style.display = "block";
+    await displayRanking();
 }
 
 document.getElementById("retry-btn").onclick = () => location.reload();
