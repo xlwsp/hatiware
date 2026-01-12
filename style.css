@@ -1,0 +1,38 @@
+body { 
+    margin: 0; 
+    background: #1a1a1a; 
+    overflow: hidden; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#game-container {
+    position: relative;
+    /* 縦長を維持しつつ画面にフィットさせる */
+    width: 90vw;
+    height: 135vw; 
+    max-width: 400px;
+    max-height: 600px;
+}
+
+#gameCanvas { 
+    background: #333; 
+    border: 2px solid #555;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#score { 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    color: white; 
+    font-size: 16px;
+    background: rgba(0,0,0,0.6);
+    padding: 5px 12px;
+    border-radius: 20px;
+    z-index: 100;
+}
