@@ -32,7 +32,7 @@ playerImg.src = 'player.png';
 const player = { x: 160, y: 480, width: 80, height: 80 }; 
 let enemies = [];
 
-// 一時停止
+// 一時停止ボタン
 pauseBtn.onclick = () => {
     if (gameState === "PLAYING") {
         gameState = "PAUSED";
@@ -81,25 +81,25 @@ canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
 }, { passive: false });
 
-// ランキング表示
-async function displayRanking() {
+// ランキング読み込み専用
+async function refreshRanking() {
     try {
         const snap = await db.collection("scores").orderBy("distance", "desc").limit(5).get();
         rankingList.innerHTML = "";
         if (snap.empty) {
-            rankingList.innerHTML = "<li>ランキングがありません</li>";
+            rankingList.innerHTML = "<li>データがありません</li>";
         } else {
             snap.forEach((doc, i) => {
                 const d = doc.data();
                 const li = document.createElement("li");
-                const dScore = (isNaN(d.distance) || d.distance === undefined) ? 0 : d.distance;
-                li.innerHTML = `<span>${i+1}. ${d.name || "Player"}</span> <span>${Math.floor(dScore)}m</span>`;
+                const dScore = Math.floor(d.distance) || 0;
+                li.innerHTML = `<span>${i+1}. ${d.name || "Player"}</span> <span>${dScore}m</span>`;
                 rankingList.appendChild(li);
             });
         }
-        rankingBoard.style.display = "block";
     } catch (e) {
-        console.error("Ranking Error:", e);
+        console.error("Fetch Error:", e);
+        rankingList.innerHTML = "<li>接続エラー</li>";
     }
 }
 
@@ -109,29 +109,35 @@ async function handleGameOver(finalDist) {
     pauseBtn.style.display = "none";
     
     let currentDist = Math.floor(finalDist) || 0;
-    let bestScore = parseInt(localStorage.getItem("bestDistance"));
-    if (isNaN(bestScore)) bestScore = -1; // 初回プレイ用
-
+    // localStorageは文字列で入るので必ず数値化
+    let bestScore = parseInt(localStorage.getItem("bestDistance") || "-1");
     let playerName = localStorage.getItem("playerName");
 
-    // 初回プレイまたはハイスコア更新時
+    // スコア送信の条件：ハイスコア時、または初回
     if (currentDist > bestScore) {
-        if (!playerName) {
-            // ★ここでお名前を入力させます
-            playerName = prompt("初プレイ・ハイスコア更新！\nランキングに載せるお名前を入力してください:") || "Player";
+        // 名前がない場合はここで強制入力
+        if (!playerName || playerName === "null" || playerName === "") {
+            playerName = prompt("新記録です！ランキングに載せる名前を入力してください:") || "Player";
             localStorage.setItem("playerName", playerName);
         }
+        
         localStorage.setItem("bestDistance", currentDist);
+
         try {
+            // 保存が終わるまで待機
             await db.collection("scores").add({
                 name: playerName,
                 distance: currentDist,
-                date: new Date()
+                date: firebase.firestore.FieldValue.serverTimestamp()
             });
-        } catch (e) { console.error("Save Error:", e); }
+        } catch (e) {
+            console.error("Save Error:", e);
+        }
     }
 
-    await displayRanking();
+    // 保存が終わってからランキングを読み込んで表示
+    await refreshRanking();
+    rankingBoard.style.display = "block";
 }
 
 document.getElementById("retry-btn").onclick = () => location.reload();
