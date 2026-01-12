@@ -98,3 +98,13 @@ body {
     justify-content: space-between;
     font-size: 16px;
 }
+/* 既存のコードに上書き、または追加 */
+#gameCanvas { 
+    /* 草原のような深い緑のグラデーション */
+    background: linear-gradient(to bottom, #2ecc71, #27ae60); 
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 2px solid #fff;
+    box-sizing: border-box;
+}
