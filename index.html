@@ -11,9 +11,16 @@
 <body>
     <div id="game-container">
         <div id="score">SCORE: 0 | DIST: 0m</div>
+        <button id="pause-btn" style="display: none;">PAUSE</button>
+        
         <div id="overlay">
             <button id="start-btn">START</button>
             <div id="countdown-text"></div>
+            <div id="ranking-board" style="display: none;">
+                <h2 style="color:#FFD700">🏆 RANKING</h2>
+                <ul id="ranking-list"></ul>
+                <button id="retry-btn">RETRY</button>
+            </div>
         </div>
         <canvas id="gameCanvas"></canvas>
     </div>
