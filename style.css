@@ -2,8 +2,8 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #333;
-    font-family: 'Arial', sans-serif;
+    background-color: #f0f8ff;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -12,48 +12,66 @@ body {
 
 #game-container {
     position: relative;
-    width: 400px;
-    height: 600px;
+    width: 66.67vh; /* 400:600比率 */
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 150vw;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(0,0,0,0.3);
 }
 
 #gameCanvas {
-    background: linear-gradient(to bottom, #2ecc71, #27ae60);
+    /* 背景色は画像が読み込まれるまでの予備 */
+    background: #a1ffce;
     width: 100%;
     height: 100%;
     display: block;
-    border: 2px solid #fff;
-    box-sizing: border-box;
 }
 
 #score {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    color: white;
-    font-size: 18px;
-    text-shadow: 2px 2px 4px #000;
+    top: 20px;
+    left: 20px;
+    color: #2c3e50;
+    font-size: 24px;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px 20px;
+    border-radius: 30px;
+    z-index: 10;
 }
 
+/* スタートボタンともう一度遊ぶボタンを下側に固定 */
 #start-btn, #retry-btn {
     position: absolute;
-    top: 50%;
+    bottom: 5%; /* 画面のかなり下側に配置 */
     left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 15px 30px;
-    font-size: 20px;
+    transform: translateX(-50%);
+    padding: 15px 50px;
+    font-size: 28px;
+    font-weight: bold;
     cursor: pointer;
-    background: #fff;
-    border: none;
-    border-radius: 10px;
+    background: #5dade2;
+    color: white;
+    border: 4px solid #fff;
+    border-radius: 50px;
+    box-shadow: 0 6px 0 #2e86c1;
+    z-index: 100;
 }
 
 #pause-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 5px 15px;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
     display: none;
     cursor: pointer;
+    background: #fff;
+    border: 2px solid #5dade2;
+    border-radius: 15px;
+    color: #5dade2;
+    font-weight: bold;
+    z-index: 10;
 }
 
 #countdown-text {
@@ -61,32 +79,43 @@ body {
     top: 40%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 80px;
-    color: white;
+    font-size: 120px;
+    color: #ff7f50;
     font-weight: bold;
+    text-shadow: 5px 5px 0px #fff;
+    z-index: 20;
 }
 
 #ranking-board {
     position: absolute;
-    top: 15%;
-    left: 10%;
-    width: 80%;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 15px;
+    top: 10%; /* 上側に配置してリストをしっかり見せる */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-height: 65%;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 30px;
     display: none;
     text-align: center;
+    border: 6px solid #5dade2;
+    box-sizing: border-box;
+    overflow-y: auto;
+    z-index: 50;
 }
 
 #ranking-list {
     list-style: none;
     padding: 0;
-    margin: 15px 0;
+    margin: 20px 0;
 }
 
 #ranking-list li {
-    padding: 8px;
-    border-bottom: 1px solid #ccc;
+    padding: 15px;
+    border-bottom: 2px dashed #5dade2;
     display: flex;
     justify-content: space-between;
+    font-size: 20px;
+    font-weight: bold;
+    color: #34495e;
 }
