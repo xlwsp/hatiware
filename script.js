@@ -10,6 +10,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// LINE等のブラウザキャッシュ・接続対策
+db.settings({ cacheSizeBytes: 0 });
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreElement = document.getElementById("score");
@@ -19,7 +22,6 @@ const countdownText = document.getElementById("countdown-text");
 const rankingBoard = document.getElementById("ranking-board");
 const rankingList = document.getElementById("ranking-list");
 
-// ★ 縦の長さを少し短く調整 (600 -> 550)
 canvas.width = 400;
 canvas.height = 550; 
 
@@ -28,16 +30,21 @@ let score = 0;
 let distance = 0;
 let enemySpeed = 5;
 
-const playerImg = new Image();
-playerImg.src = 'player.png'; 
-const enemyImg = new Image();
-enemyImg.src = 'gomi.png'; 
+// キャッシュ対策用のタイムスタンプ
+const v = new Date().getTime();
 
-// ★ プレイヤーの位置を少し上に上げる (y: 480 -> 420)
+// 画像の読み込み
+const playerImg = new Image();
+playerImg.src = 'player.png?v=' + v; 
+const enemyImg = new Image();
+enemyImg.src = 'gomi.png?v=' + v; 
+const bgImg = new Image(); // ★背景画像を追加
+bgImg.src = 'haikei.png?v=' + v;
+
 const player = { x: 160, y: 420, width: 80, height: 80 }; 
 let enemies = [];
 
-let userUUID = localStorage.getItem("userUUID") || 'user_' + Math.random().toString(36).substr(2, 9);
+let userUUID = localStorage.getItem("userUUID") || 'u_' + Math.random().toString(36).substr(2, 9);
 localStorage.setItem("userUUID", userUUID);
 
 pauseBtn.onclick = () => {
@@ -112,7 +119,7 @@ async function handleGameOver(finalDist) {
     let bestScore = Math.floor(Number(localStorage.getItem("bestDistance"))) || 0;
     let playerName = localStorage.getItem("playerName") || "";
 
-    if (currentDist > bestScore) {
+    if (currentDist > bestScore || bestScore === 0) {
         const newName = prompt(`新記録！ ${currentDist}m\n名前を入力:`, playerName || "Player");
         playerName = newName || playerName || "Player";
         localStorage.setItem("playerName", playerName);
@@ -132,7 +139,6 @@ document.getElementById("retry-btn").onclick = () => location.reload();
 
 function spawn() {
     if (gameState !== "PLAYING") return;
-    // ★ w, h は当たり判定用(40x40)。visualSize を描画用(90x90)として追加
     enemies.push({ 
         x: Math.random() * (canvas.width - 40), 
         y: -90, 
@@ -148,6 +154,9 @@ function gameLoop() {
     if (gameState !== "PLAYING") return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // ★背景の描画（キャンバスサイズに合わせて引き伸ばし）
+    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
     distance += 0.2;
     scoreElement.innerText = `SCORE: ${score} | DIST: ${Math.floor(distance)}m`;
 
@@ -158,16 +167,12 @@ function gameLoop() {
         e.y += enemySpeed;
         e.angle += e.rotSpeed;
 
-        // ★ 回転描画（見た目だけ大きく描画）
         ctx.save();
-        // 中心座標を計算（当たり判定の中心に合わせる）
         ctx.translate(e.x + e.w / 2, e.y + e.h / 2); 
         ctx.rotate(e.angle);
-        // visualSizeを使って、当たり判定(e.w)より大きく描く
         ctx.drawImage(enemyImg, -e.visualSize / 2, -e.visualSize / 2, e.visualSize, e.visualSize);
         ctx.restore();
 
-        // 当たり判定は e.w / e.h (40x40) のままなので避けやすい
         if (player.x < e.x + e.w && player.x + player.width > e.x &&
             player.y < e.y + e.h && player.y + player.height > e.y) {
             handleGameOver(distance);
@@ -184,8 +189,16 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-playerImg.onload = enemyImg.onload = () => {
-    if (gameState === "STARTING") {
+// 全ての画像が読み込まれたら開始
+let imagesLoaded = 0;
+const totalImages = 3;
+function checkAllLoaded() {
+    imagesLoaded++;
+    if (imagesLoaded === totalImages && gameState === "STARTING") {
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
         ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
     }
-};
+}
+playerImg.onload = checkAllLoaded;
+enemyImg.onload = checkAllLoaded;
+bgImg.onload = checkAllLoaded;
