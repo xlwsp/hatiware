@@ -1,14 +1,13 @@
 // Firebaseの設定
 const firebaseConfig = {
-  apiKey: "AIzaSyDjYZHcGo6RiPVHlZHFFoXcMoFsx4N6d5U",
-  authDomain: "hatiware-ac9f4.firebaseapp.com",
-  projectId: "hatiware-ac9f4",
-  storageBucket: "hatiware-ac9f4.firebasestorage.app",
-  messagingSenderId: "682427412458",
-  appId: "1:682427412458:web:29820bcf58816565834c93"
+    apiKey: "AIzaSyDjYZHcGo6RiPVHlZHFFoXcMoFsx4N6d5U",
+    authDomain: "hatiware-ac9f4.firebaseapp.com",
+    projectId: "hatiware-ac9f4",
+    storageBucket: "hatiware-ac9f4.firebasestorage.app",
+    messagingSenderId: "682427412458",
+    appId: "1:682427412458:web:29820bcf58816565834c93"
 };
 
-// 二重初期化エラーを防ぐ
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -25,11 +24,11 @@ const CHARACTERS = [
     { id: 'si-sa', name: 'シーサー', file: 'si-sa-.png', rarity: 'epic' }
 ];
 
-const GACHA_COST = 1000;
-const FIXED_SIZE = 80;
+const GACHA_COST = 500;
+const PLAYER_RENDER_SIZE = 160; 
+const ENEMY_RENDER_SIZE = 80;
 
 window.onload = function() {
-    // ローカルストレージの初期設定
     if (!localStorage.getItem('totalPoints')) localStorage.setItem('totalPoints', '0');
     if (!localStorage.getItem('unlockedCharacters')) localStorage.setItem('unlockedCharacters', JSON.stringify(['tiikawa']));
     if (!localStorage.getItem('selectedCharacter')) localStorage.setItem('selectedCharacter', 'tiikawa');
@@ -38,11 +37,11 @@ window.onload = function() {
     bgm.loop = true;
     bgm.volume = 0.5;
 
-    // 要素の取得
     const lobbyScreen = document.getElementById('lobby-screen');
     const gachaScreen = document.getElementById('gacha-screen');
     const lockerScreen = document.getElementById('locker-screen');
     const gameScreen = document.getElementById('game-screen');
+    const pauseMenu = document.getElementById('pause-menu'); // 一時停止メニュー
     const totalPointsDisplay = document.getElementById('total-points');
     const gachaPointsDisplay = document.getElementById('gacha-points-display');
     const canvas = document.getElementById("gameCanvas");
@@ -50,12 +49,15 @@ window.onload = function() {
     const scoreElement = document.getElementById("score");
     const startBtn = document.getElementById("start-btn");
     const pauseBtn = document.getElementById("pause-btn");
-    const retryBtn = document.getElementById("retry-btn");
+    const resumeBtn = document.getElementById("resume-btn"); // 追加
+    const exitBtn = document.getElementById("exit-btn"); // 追加
     const backToLobbyBtn = document.getElementById("back-to-lobby-btn");
     const volumeSlider = document.getElementById("volume-slider");
     const countdownText = document.getElementById("countdown-text");
     const rankingBoard = document.getElementById("ranking-board");
     const rankingList = document.getElementById("ranking-list");
+
+    const retryBtn = document.getElementById("retry-btn");
 
     canvas.width = 400;
     canvas.height = 600;
@@ -80,8 +82,8 @@ window.onload = function() {
 
     function updatePointsDisplay() {
         const points = parseInt(localStorage.getItem('totalPoints')) || 0;
-        totalPointsDisplay.innerHTML = `🌟 ポイント: ${points}P`;
-        gachaPointsDisplay.innerHTML = `🌟 保有: ${points}P`;
+        if (totalPointsDisplay) totalPointsDisplay.innerHTML = `🌟 ポイント: ${points}P`;
+        if (gachaPointsDisplay) gachaPointsDisplay.innerHTML = `🌟 保有: ${points}P`;
     }
 
     function showLobby() {
@@ -90,18 +92,42 @@ window.onload = function() {
         gachaScreen.classList.add('hidden');
         lockerScreen.classList.add('hidden');
         gameScreen.classList.add('hidden');
+        if (pauseMenu) pauseMenu.classList.add('hidden'); // メニューを隠す
         bgm.pause();
         bgm.currentTime = 0;
         updatePointsDisplay();
     }
 
-    // ボタンイベントの設定（個別に記述してエラーを防ぐ）
     document.getElementById('play-btn').addEventListener('click', () => {
         lobbyScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
         gameState = "STARTING";
         resetGame();
     });
+
+    // --- PAUSEボタンの動作 ---
+    if (pauseBtn) {
+        pauseBtn.onclick = () => {
+            if (gameState === "PLAYING") {
+                gameState = "PAUSED";
+                if (pauseMenu) pauseMenu.classList.remove('hidden');
+            }
+        };
+    }
+
+    // --- メニュー内の「つづける」 ---
+    if (resumeBtn) {
+        resumeBtn.onclick = () => {
+            gameState = "PLAYING";
+            if (pauseMenu) pauseMenu.classList.add('hidden');
+            gameLoop(); // 再開
+        };
+    }
+
+    // --- メニュー内の「ロビーへ戻る」 ---
+    if (exitBtn) {
+        exitBtn.onclick = showLobby;
+    }
 
     document.getElementById('gacha-btn').addEventListener('click', () => {
         lobbyScreen.classList.add('hidden');
@@ -169,8 +195,10 @@ window.onload = function() {
         score = 0; distance = 0; enemySpeed = 5; enemies = []; player.x = 160;
         scoreElement.innerText = `SCORE: 0 | DIST: 0m`;
         rankingBoard.style.display = 'none';
-        retryBtn.style.display = 'none';
+        if (retryBtn) retryBtn.style.display = 'none';
         backToLobbyBtn.style.display = 'none';
+        if (pauseMenu) pauseMenu.classList.add('hidden');
+        if (pauseBtn) pauseBtn.style.display = "none"; // 最初は隠す
         
         const selectedId = localStorage.getItem('selectedCharacter');
         const selectedChar = CHARACTERS.find(c => c.id === selectedId);
@@ -185,17 +213,39 @@ window.onload = function() {
         startCountdown();
     };
 
-    retryBtn.onclick = () => {
-        resetGame();
-    };
+    if (retryBtn) {
+        retryBtn.onclick = () => { resetGame(); };
+    }
 
     backToLobbyBtn.onclick = showLobby;
-
     volumeSlider.oninput = (e) => { bgm.volume = e.target.value; };
 
     function startCountdown() {
         gameState = "COUNTDOWN";
         let count = 3;
+function drawPreGame() {
+            if (gameState !== "COUNTDOWN") return; // カウントダウンが終わったら終了
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景を描く
+            if (bgImg.complete) {
+                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+            }
+            
+            // プレイヤーを描く（サイズ160の設定を維持）
+            if (playerImg.complete) {
+                ctx.save();
+                ctx.shadowColor = "white";
+                ctx.shadowBlur = 10;
+                const offset = (PLAYER_RENDER_SIZE - player.width) / 2;
+                ctx.drawImage(playerImg, player.x - offset, player.y - offset, PLAYER_RENDER_SIZE, PLAYER_RENDER_SIZE);
+                ctx.restore();
+            }
+            
+            requestAnimationFrame(drawPreGame);
+        }
+        drawPreGame(); // 描画開始
         countdownText.innerText = count;
         const timer = setInterval(() => {
             count--;
@@ -203,7 +253,10 @@ window.onload = function() {
                 clearInterval(timer);
                 countdownText.innerText = "";
                 gameState = "PLAYING";
-                pauseBtn.style.display = "block";
+                
+                // --- ここでPAUSEボタンを確実に表示する ---
+                if (pauseBtn) pauseBtn.style.display = "block"; 
+                
                 gameLoop();
             } else {
                 countdownText.innerText = count;
@@ -237,18 +290,18 @@ window.onload = function() {
                 i++;
             });
             rankingBoard.style.display = "block";
-            retryBtn.style.display = "block";
+            if (retryBtn) retryBtn.style.display = "block";
             backToLobbyBtn.style.display = "block";
         } catch (e) {
             console.error(e);
-            retryBtn.style.display = "block";
+            if (retryBtn) retryBtn.style.display = "block";
             backToLobbyBtn.style.display = "block";
         }
     }
 
     async function handleGameOver(finalDist) {
         gameState = "GAMEOVER";
-        pauseBtn.style.display = "none";
+        if (pauseBtn) pauseBtn.style.display = "none"; // 終了時は隠す
         const currentPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
         localStorage.setItem('totalPoints', (currentPoints + score).toString());
         
@@ -276,24 +329,31 @@ window.onload = function() {
     function gameLoop() {
         if (gameState !== "PLAYING") return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        
+        if (bgImg.complete) {
+            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        }
 
         if (playerImg && playerImg.complete) {
             ctx.save();
             ctx.shadowColor = "white";
             ctx.shadowBlur = 10;
-            ctx.drawImage(playerImg, player.x - 10, player.y - 10, FIXED_SIZE, FIXED_SIZE);
+            const offset = (PLAYER_RENDER_SIZE - player.width) / 2;
+            ctx.drawImage(playerImg, player.x - offset, player.y - offset, PLAYER_RENDER_SIZE, PLAYER_RENDER_SIZE);
             ctx.restore();
         }
 
         for (let i = 0; i < enemies.length; i++) {
             let e = enemies[i];
             e.y += enemySpeed;
-            ctx.save();
-            ctx.shadowColor = "white";
-            ctx.shadowBlur = 10;
-            ctx.drawImage(enemyImg, e.x - 10, e.y - 10, FIXED_SIZE, FIXED_SIZE);
-            ctx.restore();
+            if (enemyImg.complete) {
+                ctx.save();
+                ctx.shadowColor = "white";
+                ctx.shadowBlur = 10;
+                const eOffset = (ENEMY_RENDER_SIZE - e.w) / 2;
+                ctx.drawImage(enemyImg, e.x - eOffset, e.y - eOffset, ENEMY_RENDER_SIZE, ENEMY_RENDER_SIZE);
+                ctx.restore();
+            }
 
             if (player.x < e.x + e.w && player.x + player.width > e.x &&
                 player.y < e.y + e.h && player.y + player.height > e.y) {
@@ -313,14 +373,12 @@ window.onload = function() {
         requestAnimationFrame(gameLoop);
     }
 
-    // 敵の生成用タイマー
     setInterval(() => {
         if (gameState === "PLAYING") {
             enemies.push({ x: Math.random() * (canvas.width - 60), y: -100, w: 60, h: 60 });
         }
     }, 800);
 
-    // 最初にロビーを表示
     updatePointsDisplay();
     showLobby();
 };
