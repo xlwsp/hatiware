@@ -4,38 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <title>ハチワレの大冒険！</title>
+    <title>ちいかわ大冒険！</title>
     <meta name="description" content="ひとりごつを聴きながら、ゴミを避けて遠くまで進もう！">
-    <meta property="og:title" content="ハチワレのごみ拾い討伐">
-    <meta property="og:description" content="ハチワレを操作してゴミを避けるゲーム！キミは何メートル進めるかな？">
+    <meta property="og:title" content="ちいかわのごみ拾い討伐">
+    <meta property="og:description" content="ちいかわを操作してゴミを避けるゲーム！キミは何メートル進めるかな？">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="player.png">
+    <meta property="og:image" content="tiikawa.png">
     <meta name="twitter:card" content="summary_large_image">
-
-    <link rel="stylesheet" href="style.css?v=1300">
+    <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
     <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div id="score">SCORE: 0 | DIST: 0m</div>
-        
-        <div id="volume-control">
-            <span>🔊</span>
-            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+        <div id="lobby-screen">
+            <h1 class="cute-title">ちいかわ<br>大冒険！</h1>
+            <div id="total-points" class="cute-badge">🌟 ポイント: 0P</div>
+            <div class="lobby-buttons">
+                <button id="play-btn" class="lobby-btn btn-play">
+                    <span class="btn-icon">⚔️</span>
+                    <span>討伐開始</span>
+                </button>
+                <button id="gacha-btn" class="lobby-btn btn-gacha">
+                    <span class="btn-icon">🎁</span>
+                    <span>ガチャ (1000P)</span>
+                </button>
+                <button id="locker-btn" class="lobby-btn btn-locker">
+                    <span class="btn-icon">👕</span>
+                    <span>ロッカー</span>
+                </button>
+            </div>
         </div>
 
-        <div id="countdown-text"></div>
-        <button id="start-btn">ゲームスタート</button>
-        <button id="pause-btn">PAUSE</button>
-
-        <div id="ranking-board">
-            <h2>ランキング</h2>
-            <ul id="ranking-list"></ul>
+        <div id="gacha-screen" class="hidden">
+            <h2 class="cute-title">キャラガチャ</h2>
+            <div class="gacha-info">
+                <p class="gacha-cost">💰 必要ポイント: 1000P</p>
+                <div id="gacha-points-display" class="cute-badge">🌟 保有: 0P</div>
+            </div>
+            <button id="pull-gacha-btn" class="action-btn gacha-pull-btn">
+                <span>✨ ガチャを引く ✨</span>
+            </button>
+            <button id="back-from-gacha-btn" class="back-btn">← 戻る</button>
+            <div id="gacha-result" class="hidden">
+                <div class="gacha-result-box">
+                    <h3 class="gacha-get-title">🎉 GET! 🎉</h3>
+                    <div class="gacha-result-img-container">
+                        <img id="gacha-result-img" src="" alt="獲得キャラ">
+                    </div>
+                    <p id="gacha-result-name" class="gacha-result-name"></p>
+                    <p class="gacha-result-subtitle">をゲットしたよ！</p>
+                </div>
+            </div>
         </div>
-        <button id="retry-btn" style="display:none;">もう一度あそぶ</button>
+
+        <div id="locker-screen" class="hidden">
+            <h2 class="cute-title">ロッカー</h2>
+            <p class="locker-subtitle">使うキャラをえらんでね 💕</p>
+            <div id="character-grid"></div>
+            <button id="back-from-locker-btn" class="back-btn">← 戻る</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <canvas id="gameCanvas"></canvas>
+            <div id="score">SCORE: 0 | DIST: 0m</div>
+            
+            <div id="volume-control">
+                <span>🔊</span>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+            </div>
+            <div id="countdown-text"></div>
+            <button id="start-btn">討伐開始</button>
+            <button id="pause-btn">PAUSE</button>
+            <div id="ranking-board">
+                <h2>🏆 ランキング 🏆</h2>
+                <div id="ranking-list-container">
+                    <ul id="ranking-list"></ul>
+                </div>
+            </div>
+            <button id="back-to-lobby-btn" style="display:none;">ロビーへ戻る</button>
+        </div>
     </div>
-    <script src="script.js?v=1300"></script>
+    <script src="script.js"></script>
 </body>
 </html>

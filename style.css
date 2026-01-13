@@ -2,8 +2,8 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #f0f8ff;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #ffeaa7 0%, #74b9ff 100%);
+    font-family: 'Rounded Mplus 1c', 'ヒラギノ丸ゴ ProN', 'Hiragino Maru Gothic ProN', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,135 +14,181 @@ body {
 
 #game-container {
     position: relative;
-    /* スマホで上まで広げるための設定 */
     height: 100vh;
     height: 100dvh;
-    aspect-ratio: 2 / 3; /* 400:600の比率を維持 */
+    aspect-ratio: 2 / 3;
     overflow: hidden;
-    box-shadow: 0 0 50px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
     display: flex;
     justify-content: center;
-    background-color: #000;
+    background-color: #fff;
+    border-radius: 20px;
 }
 
-#gameCanvas {
+.hidden {
+    display: none !important;
+}
+
+/* ロビー画面 */
+#lobby-screen {
     width: 100%;
     height: 100%;
-    display: block;
-    object-fit: cover; /* キャンバスを隙間なくフィットさせる */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-image: url('gazou.png');
+    background-size: cover;
+    background-position: center;
+    padding: 30px 20px;
+    box-sizing: border-box;
 }
 
-#score {
-    position: absolute;
-    /* スマホのノッチを避ける設定 */
-    top: env(safe-area-inset-top, 20px);
-    left: 20px;
-    color: #2c3e50;
-    font-size: clamp(16px, 4vw, 24px);
+.cute-title {
+    color: #ffffff;
+    font-size: clamp(34px, 9vw, 52px);
+    font-weight: 900;
+    margin-bottom: 25px;
+    text-align: center;
+    text-shadow: 
+        3px 3px 0px #ff9ff3,
+        -2px -2px 0px #00d2d3,
+        0 0 15px rgba(255, 255, 255, 0.8);
+    line-height: 1.2;
+    letter-spacing: 3px;
+    -webkit-text-stroke: 1.5px #ff6b9d;
+}
+
+.cute-badge {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    color: #2d3436;
+    font-size: clamp(18px, 4.5vw, 24px);
     font-weight: bold;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 8px 15px;
-    border-radius: 30px;
-    z-index: 10;
+    padding: 12px 28px;
+    border-radius: 50px;
+    margin-bottom: 35px;
+    box-shadow: 0 6px 20px rgba(253, 203, 110, 0.4);
+    border: 4px solid #fff;
 }
 
-#volume-control {
-    position: absolute;
-    /* スコアの下に配置 */
-    top: calc(env(safe-area-inset-top, 20px) + 50px);
-    left: 20px;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 5px 12px;
-    border-radius: 20px;
+.lobby-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 85%;
+    max-width: 320px;
+}
+
+.lobby-btn {
+    padding: 18px 25px;
+    font-size: clamp(18px, 4.5vw, 22px);
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+    transition: all 0.2s;
     display: flex;
     align-items: center;
-    gap: 8px;
-    z-index: 10;
+    justify-content: center;
+    gap: 10px;
 }
 
-#volume-slider {
-    width: 60px;
-    cursor: pointer;
-    accent-color: #5dade2;
+.lobby-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
 }
 
-#start-btn, #retry-btn {
+.btn-play { background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); border: 4px solid #fff; }
+.btn-gacha { background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); border: 4px solid #fff; }
+.btn-locker { background: linear-gradient(135deg, #55efc4 0%, #00b894 100%); border: 4px solid #fff; }
+
+/* ガチャ画面 */
+#gacha-screen {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background-image: url('gatyahaikei.png'); background-size: cover; background-position: center;
+    padding: 20px; box-sizing: border-box;
+}
+
+.gacha-cost {
+    color: #fff; font-size: clamp(18px, 4.5vw, 24px); font-weight: bold;
+    background: rgba(0,0,0,0.4); padding: 10px 25px; border-radius: 50px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.action-btn {
+    padding: 18px 45px; font-size: clamp(20px, 5vw, 28px); font-weight: bold;
+    cursor: pointer; background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    color: #2d3436; border: 5px solid #fff; border-radius: 50px;
+    box-shadow: 0 8px 0 #e17055, 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.back-btn {
+    padding: 12px 30px; font-size: clamp(16px, 4vw, 20px); font-weight: bold;
+    cursor: pointer; background: rgba(255,255,255,0.9); border-radius: 50px; border: 3px solid #dfe6e9;
+}
+
+.gacha-result-box {
+    background: linear-gradient(135deg, #fff 0%, #ffeaa7 100%);
+    padding: 30px 20px; border-radius: 30px; border: 6px solid #fdcb6e;
+    animation: popBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ロッカー画面 */
+#locker-screen {
+    width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center;
+    background: linear-gradient(180deg, #74b9ff 0%, #a29bfe 100%); padding: 20px; box-sizing: border-box; overflow-y: auto;
+}
+
+#character-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 90%; max-width: 380px; margin-bottom: 25px; }
+
+.character-card {
+    background: rgba(255,255,255,0.95); border: 4px solid transparent; border-radius: 20px;
+    padding: 12px; cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column; align-items: center;
+}
+.character-card.selected { border-color: #fdcb6e; background: linear-gradient(135deg, #ffeaa7 0%, #fff 100%); }
+.character-card.locked { opacity: 0.4; filter: grayscale(1); }
+.character-card img { width: 75px; height: 75px; object-fit: contain; }
+
+/* ゲーム画面 */
+#game-screen { width: 100%; height: 100%; position: relative; }
+#gameCanvas { width: 100%; height: 100%; display: block; object-fit: cover; }
+#score {
+    position: absolute; top: 20px; left: 20px; color: #2c3e50; font-size: 20px; font-weight: bold;
+    background: rgba(255, 255, 255, 0.95); padding: 10px 18px; border-radius: 50px; z-index: 10; border: 3px solid #74b9ff;
+}
+
+#volume-control { position: absolute; top: 75px; left: 20px; background: rgba(255, 255, 255, 0.95); padding: 8px 15px; border-radius: 50px; z-index: 10; border: 3px solid #74b9ff; display: flex; align-items: center; gap: 10px; }
+#volume-slider { width: 70px; accent-color: #a29bfe; }
+
+#start-btn, #back-to-lobby-btn {
     position: absolute;
-    bottom: 8%; /* 少しだけ上に調整して押しやすく */
+    bottom: 8%;
     left: 50%;
     transform: translateX(-50%);
-    padding: 12px 35px;
-    font-size: clamp(18px, 5vw, 28px);
+    padding: 15px 40px;
+    font-size: 24px;
     font-weight: bold;
-    cursor: pointer;
-    background: #5dade2;
-    color: white;
-    border: 4px solid #fff;
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    color: #2d3436;
+    border: 5px solid #fff;
     border-radius: 50px;
-    box-shadow: 0 6px 0 #2e86c1;
+    box-shadow: 0 8px 0 #e17055;
     z-index: 100;
-    white-space: nowrap;
-    width: auto;
-    min-width: 180px;
-}
-
-#pause-btn {
-    position: absolute;
-    top: env(safe-area-inset-top, 20px);
-    right: 20px;
-    padding: 10px 20px;
-    display: none;
-    cursor: pointer;
-    background: #fff;
-    border: 2px solid #5dade2;
-    border-radius: 15px;
-    color: #5dade2;
-    font-weight: bold;
-    z-index: 10;
-}
-
-#countdown-text {
-    position: absolute;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 100px;
-    color: #ff7f50;
-    font-weight: bold;
-    text-shadow: 5px 5px 0px #fff;
-    z-index: 20;
 }
 
 #ranking-board {
-    position: absolute;
-    top: 15%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 85%;
-    max-height: 60%;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 25px;
-    border-radius: 30px;
-    display: none;
-    text-align: center;
-    border: 6px solid #5dade2;
-    box-sizing: border-box;
-    overflow-y: auto;
-    z-index: 50;
+    position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 85%; max-height: 70%;
+    background: linear-gradient(135deg, #fff 0%, #ffeaa7 100%); padding: 25px 20px; border-radius: 30px;
+    display: none; border: 6px solid #fdcb6e; z-index: 50; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 
-#ranking-list {
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
-}
-
+#ranking-list-container { max-height: 320px; overflow-y: auto; margin: 15px 0; }
+#ranking-list { list-style: none; padding: 0; }
 #ranking-list li {
-    padding: 15px;
-    border-bottom: 2px dashed #5dade2;
-    display: flex;
-    justify-content: space-between;
-    font-size: 20px;
-    font-weight: bold;
-    color: #34495e;
+    padding: 12px 15px; margin-bottom: 8px; background: rgba(255,255,255,0.6);
+    border-radius: 15px; display: flex; justify-content: space-between; font-weight: bold;
 }
+
+@keyframes popBounce { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
