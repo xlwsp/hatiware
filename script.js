@@ -321,7 +321,7 @@ function drawPreGame() {
                 });
             } catch(e) { console.error(e); }
         } else {
-            alert(`討伐失敗！\n📏 距離: ${currentDistFloor}m\n✨ ${score}P 獲得！`);
+            alert(`おつかれさま！！\n📏 距離: ${currentDistFloor}m\n✨ ${score}P 獲得！`);
         }
         showRanking();
     }
