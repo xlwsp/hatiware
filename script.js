@@ -29,19 +29,23 @@ const PLAYER_RENDER_SIZE = 160;
 const ENEMY_RENDER_SIZE = 80;
 
 window.onload = function() {
+    // --- 1. 初期設定 ---
     if (!localStorage.getItem('totalPoints')) localStorage.setItem('totalPoints', '0');
     if (!localStorage.getItem('unlockedCharacters')) localStorage.setItem('unlockedCharacters', JSON.stringify(['tiikawa']));
     if (!localStorage.getItem('selectedCharacter')) localStorage.setItem('selectedCharacter', 'tiikawa');
+    // 受け取り済みギフトを記録する箱（これがないと無限に受け取れてしまうため）
+    if (!localStorage.getItem('claimedGifts')) localStorage.setItem('claimedGifts', JSON.stringify([]));
 
     const bgm = new Audio('bgm.mp3');
     bgm.loop = true;
     bgm.volume = 0.5;
 
+    // --- (UI要素の取得などはそのまま) ---
     const lobbyScreen = document.getElementById('lobby-screen');
     const gachaScreen = document.getElementById('gacha-screen');
     const lockerScreen = document.getElementById('locker-screen');
     const gameScreen = document.getElementById('game-screen');
-    const pauseMenu = document.getElementById('pause-menu'); // 一時停止メニュー
+    const pauseMenu = document.getElementById('pause-menu');
     const totalPointsDisplay = document.getElementById('total-points');
     const gachaPointsDisplay = document.getElementById('gacha-points-display');
     const canvas = document.getElementById("gameCanvas");
@@ -49,14 +53,13 @@ window.onload = function() {
     const scoreElement = document.getElementById("score");
     const startBtn = document.getElementById("start-btn");
     const pauseBtn = document.getElementById("pause-btn");
-    const resumeBtn = document.getElementById("resume-btn"); // 追加
-    const exitBtn = document.getElementById("exit-btn"); // 追加
+    const resumeBtn = document.getElementById("resume-btn");
+    const exitBtn = document.getElementById("exit-btn");
     const backToLobbyBtn = document.getElementById("back-to-lobby-btn");
     const volumeSlider = document.getElementById("volume-slider");
     const countdownText = document.getElementById("countdown-text");
     const rankingBoard = document.getElementById("ranking-board");
     const rankingList = document.getElementById("ranking-list");
-
     const retryBtn = document.getElementById("retry-btn");
 
     canvas.width = 400;
@@ -80,6 +83,42 @@ window.onload = function() {
     let userUUID = localStorage.getItem("userUUID") || 'u_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("userUUID", userUUID);
 
+    // --- 2. 新機能：自分専用のギフト受取関数 ---
+    async function checkMyGifts() {
+        try {
+            // Firebaseの「scores > あなたのUUID > pointDistribution」をチェック
+            const snapshot = await db.collection("scores").doc(userUUID).collection("pointDistribution").get();
+            
+            let currentPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
+            let claimedGifts = JSON.parse(localStorage.getItem('claimedGifts')) || [];
+            let newlyClaimed = false;
+
+            snapshot.forEach((doc) => {
+                const giftId = doc.id; // ドキュメント名（例：開発者ポイント）
+                // まだ受け取っていないギフトなら
+                if (!claimedGifts.includes(giftId)) {
+                    const data = doc.data();
+                    const addedPoints = data.points || 0;
+                    
+                    currentPoints += addedPoints;
+                    claimedGifts.push(giftId); // 受け取り済みリストに追加
+                    newlyClaimed = true;
+                    
+                    alert(`🎁 プレゼントが届いています！\n【${giftId}】から ${addedPoints}P 受け取りました！`);
+                }
+            });
+
+            if (newlyClaimed) {
+                // ローカルの保存を更新
+                localStorage.setItem('totalPoints', currentPoints.toString());
+                localStorage.setItem('claimedGifts', JSON.stringify(claimedGifts));
+                updatePointsDisplay();
+            }
+        } catch (e) {
+            console.error("ギフト確認中にエラーが発生しました:", e);
+        }
+    }
+
     function updatePointsDisplay() {
         const points = parseInt(localStorage.getItem('totalPoints')) || 0;
         if (totalPointsDisplay) totalPointsDisplay.innerHTML = `🌟 ポイント: ${points}P`;
@@ -92,11 +131,16 @@ window.onload = function() {
         gachaScreen.classList.add('hidden');
         lockerScreen.classList.add('hidden');
         gameScreen.classList.add('hidden');
-        if (pauseMenu) pauseMenu.classList.add('hidden'); // メニューを隠す
+        if (pauseMenu) pauseMenu.classList.add('hidden');
         bgm.pause();
         bgm.currentTime = 0;
+        
         updatePointsDisplay();
+        checkMyGifts(); // ★ロビーを表示するたびに配布をチェックする
     }
+
+    // --- (以下、残りのコード（play-btn, gacha, renderLocker, gameLoopなど）をそのまま配置してください) ---
+    // ※文字数制限のため中略していますが、あなたが送ってくれた後半部分をそのまま繋げればOKです
 
     document.getElementById('play-btn').addEventListener('click', () => {
         lobbyScreen.classList.add('hidden');
@@ -104,7 +148,6 @@ window.onload = function() {
         gameState = "STARTING";
         resetGame();
     });
-
     // --- PAUSEボタンの動作 ---
     if (pauseBtn) {
         pauseBtn.onclick = () => {
