@@ -29,6 +29,11 @@ const PLAYER_RENDER_SIZE = 160;
 const ENEMY_RENDER_SIZE = 80;
 
 window.onload = function() {
+    // window.onload の中に追加（必要なら）
+const tickerText = document.querySelector('.news-ticker-text');
+if (tickerText) {
+    tickerText.innerText = "【アップデート】 ガチャがアップデートされました！ / 1000mをこえると、？？？の音楽が流れるようになりました！ 🌟";
+}
     // 初期化
     if (!localStorage.getItem('totalPoints')) localStorage.setItem('totalPoints', '0');
     if (!localStorage.getItem('unlockedCharacters')) localStorage.setItem('unlockedCharacters', JSON.stringify(['tiikawa']));
