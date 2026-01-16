@@ -282,7 +282,7 @@ if (exitBtn) {
             document.getElementById('gacha-result-img').src = resultImgPath;
             document.getElementById('gacha-result-name').innerText = `${result.name} (Lv.${status.stage} ${status.percent}%)`;
             resultDiv.classList.remove('hidden');
-            
+
             if (resultDiv && resultImg && resultName) {
                 resultImg.src = result.id + "1.png?v=" + v;
                 resultName.innerText = result.name;
@@ -331,23 +331,28 @@ if (exitBtn) {
         CHARACTERS.forEach(char => {
             const card = document.createElement('div');
             const isUnlocked = unlocked.includes(char.id);
-            const level = levels[char.id] || 0;
-            const isMaxed = level >= 100;
             
-            card.className = `character-card ${isUnlocked ? '' : 'locked'} ${char.id === selected ? 'selected' : ''}`;
+            // ★修正ポイント：新しく作った getCharacterLevel 関数を使って状態を取得
+            const status = getCharacterLevel(char.id); 
+            const isSelected = char.id === selected;
+            
+            card.className = `character-card ${isUnlocked ? '' : 'locked'} ${isSelected ? 'selected' : ''}`;
             
             let nameDisplay = isUnlocked ? char.name : '???';
+            const imgSrc = isUnlocked ? getCharacterImage(char.id, status.totalAmount) : `${char.id}1.png?v=${v}`;
             
-            const imgSrc = isUnlocked ? getCharacterImage(char.id, level) : `${char.id}1.png?v=${v}`;
-            
+            // ★修正ポイント：表示テキストを Lv と % に分ける
+            // 完凸(stage 3)なら MAX、それ以外は現在の段階の % を表示
+            const percentText = status.stage === 3 ? "MAX ✨" : `${status.percent}%`;
+
             card.innerHTML = `
                 <img src="${imgSrc}">
                 <span>${nameDisplay}</span>
                 ${isUnlocked ? `
                     <div class="level-gauge-small">
-                        <div class="level-gauge-fill-small" style="width: ${level}%"></div>
+                        <div class="level-gauge-fill-small" style="width: ${status.percent}%"></div>
                     </div>
-                    <span class="level-percent">${level}% ${isMaxed ? '✨' : ''}</span>
+                    <span class="level-percent">Lv.${status.stage} : ${percentText}</span>
                 ` : ''}
             `;
             
