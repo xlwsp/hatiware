@@ -14,14 +14,14 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 
 const CHARACTERS = [
-    { id: 'tiikawa', name: 'ちいかわ', file: 'tiikawa.png', rarity: 'common' },
-    { id: 'hatiware', name: 'ハチワレ', file: 'hatiware.png', rarity: 'common' },
-    { id: 'usagi', name: 'うさぎ', file: 'usagi.png', rarity: 'rare' },
-    { id: 'kurimanju', name: 'くりまんじゅう', file: 'kurimanju.png', rarity: 'common' },
-    { id: 'rakko', name: 'ラッコ', file: 'rakko.png', rarity: 'rare' },
-    { id: 'momonga', name: 'モモンガ', file: 'momonga.png', rarity: 'epic' },
-    { id: 'kani', name: 'カニ', file: 'kani.png', rarity: 'common' },
-    { id: 'si-sa', name: 'シーサー', file: 'si-sa-.png', rarity: 'epic' }
+    { id: 'tiikawa', name: 'ちいかわ', rarity: 'common' },
+    { id: 'hatiware', name: 'ハチワレ', rarity: 'common' },
+    { id: 'usagi', name: 'うさぎ', rarity: 'rare' },
+    { id: 'kurimanju', name: 'くりまんじゅう', rarity: 'common' },
+    { id: 'rakko', name: 'ラッコ', rarity: 'rare' },
+    { id: 'momonga', name: 'モモンガ', rarity: 'epic' },
+    { id: 'kani', name: 'カニ', rarity: 'common' },
+    { id: 'si-sa-', name: 'シーサー', rarity: 'epic' }
 ];
 
 const GACHA_COST = 500;
@@ -29,18 +29,25 @@ const PLAYER_RENDER_SIZE = 160;
 const ENEMY_RENDER_SIZE = 80;
 
 window.onload = function() {
-    // --- 1. 初期設定 ---
+    // 初期化
     if (!localStorage.getItem('totalPoints')) localStorage.setItem('totalPoints', '0');
     if (!localStorage.getItem('unlockedCharacters')) localStorage.setItem('unlockedCharacters', JSON.stringify(['tiikawa']));
     if (!localStorage.getItem('selectedCharacter')) localStorage.setItem('selectedCharacter', 'tiikawa');
-    // 受け取り済みギフトを記録する箱（これがないと無限に受け取れてしまうため）
     if (!localStorage.getItem('claimedGifts')) localStorage.setItem('claimedGifts', JSON.stringify([]));
+    if (!localStorage.getItem('characterLevels')) {
+        const initialLevels = {};
+        CHARACTERS.forEach(char => { initialLevels[char.id] = 0; });
+        initialLevels['tiikawa'] = 20;
+        localStorage.setItem('characterLevels', JSON.stringify(initialLevels));
+    }
+    if (!localStorage.getItem('playerName')) {
+        localStorage.setItem('playerName', 'Player');
+    }
 
     const bgm = new Audio('bgm.mp3');
     bgm.loop = true;
     bgm.volume = 0.5;
 
-    // --- (UI要素の取得などはそのまま) ---
     const lobbyScreen = document.getElementById('lobby-screen');
     const gachaScreen = document.getElementById('gacha-screen');
     const lockerScreen = document.getElementById('locker-screen');
@@ -83,10 +90,9 @@ window.onload = function() {
     let userUUID = localStorage.getItem("userUUID") || 'u_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("userUUID", userUUID);
 
-    // --- 2. 新機能：自分専用のギフト受取関数 ---
+    // ギフト受け取り機能
     async function checkMyGifts() {
         try {
-            // Firebaseの「scores > あなたのUUID > pointDistribution」をチェック
             const snapshot = await db.collection("scores").doc(userUUID).collection("pointDistribution").get();
             
             let currentPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
@@ -94,14 +100,13 @@ window.onload = function() {
             let newlyClaimed = false;
 
             snapshot.forEach((doc) => {
-                const giftId = doc.id; // ドキュメント名（例：開発者ポイント）
-                // まだ受け取っていないギフトなら
+                const giftId = doc.id;
                 if (!claimedGifts.includes(giftId)) {
                     const data = doc.data();
                     const addedPoints = data.points || 0;
                     
                     currentPoints += addedPoints;
-                    claimedGifts.push(giftId); // 受け取り済みリストに追加
+                    claimedGifts.push(giftId);
                     newlyClaimed = true;
                     
                     alert(`🎁 プレゼントが届いています！\n【${giftId}】から ${addedPoints}P 受け取りました！`);
@@ -109,7 +114,6 @@ window.onload = function() {
             });
 
             if (newlyClaimed) {
-                // ローカルの保存を更新
                 localStorage.setItem('totalPoints', currentPoints.toString());
                 localStorage.setItem('claimedGifts', JSON.stringify(claimedGifts));
                 updatePointsDisplay();
@@ -119,10 +123,35 @@ window.onload = function() {
         }
     }
 
+    function getCharacterLevel(charId) {
+        const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
+        return levels[charId] || 0;
+    }
+
+    function addCharacterLevel(charId, amount = 20) {
+        const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
+        levels[charId] = Math.min(100, (levels[charId] || 0) + amount);
+        localStorage.setItem('characterLevels', JSON.stringify(levels));
+        return levels[charId];
+    }
+
+    function getCharacterImage(charId, level) {
+        let stage = 1;
+        if (level >= 67) stage = 3;
+        else if (level >= 34) stage = 2;
+        return `${charId}${stage}.png?v=${v}`;
+    }
+
     function updatePointsDisplay() {
         const points = parseInt(localStorage.getItem('totalPoints')) || 0;
         if (totalPointsDisplay) totalPointsDisplay.innerHTML = `🌟 ポイント: ${points}P`;
         if (gachaPointsDisplay) gachaPointsDisplay.innerHTML = `🌟 保有: ${points}P`;
+    }
+
+    function updateNameDisplay() {
+        const nameElement = document.getElementById('current-name');
+        const playerName = localStorage.getItem('playerName') || 'Player';
+        if (nameElement) nameElement.textContent = playerName;
     }
 
     function showLobby() {
@@ -136,77 +165,112 @@ window.onload = function() {
         bgm.currentTime = 0;
         
         updatePointsDisplay();
-        checkMyGifts(); // ★ロビーを表示するたびに配布をチェックする
+        updateNameDisplay();
+        checkMyGifts();
     }
 
-    // --- (以下、残りのコード（play-btn, gacha, renderLocker, gameLoopなど）をそのまま配置してください) ---
-    // ※文字数制限のため中略していますが、あなたが送ってくれた後半部分をそのまま繋げればOKです
+    
+    // --- ボタン設定の書き換え（ここから） ---
 
-    document.getElementById('play-btn').addEventListener('click', () => {
+    // ロビーの各ボタン
+    document.getElementById('play-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
         gameState = "STARTING";
         resetGame();
-    });
-    // --- PAUSEボタンの動作 ---
-    if (pauseBtn) {
-        pauseBtn.onclick = () => {
-            if (gameState === "PLAYING") {
-                gameState = "PAUSED";
-                if (pauseMenu) pauseMenu.classList.remove('hidden');
-            }
-        };
-    }
+    };
 
-    // --- メニュー内の「つづける」 ---
-    if (resumeBtn) {
-        resumeBtn.onclick = () => {
-            gameState = "PLAYING";
-            if (pauseMenu) pauseMenu.classList.add('hidden');
-            gameLoop(); // 再開
-        };
-    }
-
-    // --- メニュー内の「ロビーへ戻る」 ---
-    if (exitBtn) {
-        exitBtn.onclick = showLobby;
-    }
-
-    document.getElementById('gacha-btn').addEventListener('click', () => {
+    document.getElementById('gacha-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
         gachaScreen.classList.remove('hidden');
         document.getElementById('gacha-result').classList.add('hidden');
         updatePointsDisplay();
-    });
+    };
 
-    document.getElementById('locker-btn').addEventListener('click', () => {
+    document.getElementById('locker-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
         lockerScreen.classList.remove('hidden');
         renderLocker();
-    });
+    };
+
+    // 戻るボタン（存在をチェックしてから設定）
+    const btnBackGacha = document.getElementById('back-from-gacha-btn');
+    if (btnBackGacha) btnBackGacha.onclick = showLobby;
+
+    const btnBackLocker = document.getElementById('back-from-locker-btn');
+    if (btnBackLocker) btnBackLocker.onclick = showLobby;
+
+    const btnBackLobby = document.getElementById('back-to-lobby-btn');
+    if (btnBackLobby) btnBackLobby.onclick = showLobby;
+
+    // 名前変更ボタン（HTMLにないので、エラーが出ないようにチェックを入れる）
+    const btnChangeName = document.getElementById('change-name-btn');
+    if (btnChangeName) {
+        btnChangeName.onclick = () => {
+            const currentName = localStorage.getItem('playerName') || 'Player';
+            const newName = prompt('新しい名前を入力してね！', currentName);
+            if (newName && newName.trim() !== '') {
+                localStorage.setItem('playerName', newName.trim());
+                updateNameDisplay();
+            }
+        };
+    }
+    // --- ボタン設定の書き換え（ここまで） ---
 
     document.getElementById('pull-gacha-btn').addEventListener('click', () => {
         const points = parseInt(localStorage.getItem('totalPoints')) || 0;
         if (points < GACHA_COST) {
-            alert('ポイントが足りないよ！'); return;
+            alert('ポイントが足りないよ！'); 
+            return;
         }
+        
+        const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
+        const availableChars = CHARACTERS.filter(c => levels[c.id] < 100);
+        
+        if (availableChars.length === 0) {
+            alert('すべてのキャラが完凸済みだよ！');
+            return;
+        }
+
         localStorage.setItem('totalPoints', (points - GACHA_COST).toString());
         updatePointsDisplay();
 
         const roll = Math.random() * 100;
         let rarity = roll < 10 ? 'epic' : (roll < 40 ? 'rare' : 'common');
-        const pool = CHARACTERS.filter(c => c.rarity === rarity);
+        let pool = availableChars.filter(c => c.rarity === rarity);
+        
+        if (pool.length === 0) {
+            pool = availableChars;
+        }
+        
         const result = pool[Math.floor(Math.random() * pool.length)];
 
         const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters')) || ['tiikawa'];
         const isNew = !unlocked.includes(result.id);
+        
         if (isNew) {
             unlocked.push(result.id);
             localStorage.setItem('unlockedCharacters', JSON.stringify(unlocked));
         }
 
-        document.getElementById('gacha-result-img').src = result.file + '?v=' + v;
-        document.getElementById('gacha-result-name').textContent = result.name + (isNew ? ' (NEW!)' : '');
+        const newLevel = addCharacterLevel(result.id, 20);
+        const isMaxed = newLevel >= 100;
+
+        document.getElementById('gacha-result-img').src = getCharacterImage(result.id, newLevel);
+        
+        let resultText = result.name;
+        if (isNew) resultText += ' (NEW!)';
+        
+        document.getElementById('gacha-result-name').innerHTML = `
+            ${resultText}
+            <div class="level-gauge-container">
+                <div class="level-gauge">
+                    <div class="level-gauge-fill" style="width: ${newLevel}%"></div>
+                </div>
+                <div class="level-text">${newLevel}% ${isMaxed ? '✨完凸✨' : ''}</div>
+            </div>
+        `;
+        
         document.getElementById('gacha-result').classList.remove('hidden');
     });
 
@@ -218,12 +282,31 @@ window.onload = function() {
         grid.innerHTML = '';
         const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters')) || ['tiikawa'];
         const selected = localStorage.getItem('selectedCharacter');
+        const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
         
         CHARACTERS.forEach(char => {
             const card = document.createElement('div');
             const isUnlocked = unlocked.includes(char.id);
+            const level = levels[char.id] || 0;
+            const isMaxed = level >= 100;
+            
             card.className = `character-card ${isUnlocked ? '' : 'locked'} ${char.id === selected ? 'selected' : ''}`;
-            card.innerHTML = `<img src="${char.file}?v=${v}"><span>${isUnlocked ? char.name : '???'}</span>`;
+            
+            let nameDisplay = isUnlocked ? char.name : '???';
+            
+            const imgSrc = isUnlocked ? getCharacterImage(char.id, level) : `${char.id}1.png?v=${v}`;
+            
+            card.innerHTML = `
+                <img src="${imgSrc}">
+                <span>${nameDisplay}</span>
+                ${isUnlocked ? `
+                    <div class="level-gauge-small">
+                        <div class="level-gauge-fill-small" style="width: ${level}%"></div>
+                    </div>
+                    <span class="level-percent">${level}% ${isMaxed ? '✨' : ''}</span>
+                ` : ''}
+            `;
+            
             if (isUnlocked) {
                 card.onclick = () => {
                     localStorage.setItem('selectedCharacter', char.id);
@@ -241,12 +324,13 @@ window.onload = function() {
         if (retryBtn) retryBtn.style.display = 'none';
         backToLobbyBtn.style.display = 'none';
         if (pauseMenu) pauseMenu.classList.add('hidden');
-        if (pauseBtn) pauseBtn.style.display = "none"; // 最初は隠す
+        if (pauseBtn) pauseBtn.style.display = "none";
         
         const selectedId = localStorage.getItem('selectedCharacter');
         const selectedChar = CHARACTERS.find(c => c.id === selectedId);
+        const level = getCharacterLevel(selectedId);
         playerImg = new Image();
-        playerImg.src = selectedChar.file + '?v=' + v;
+        playerImg.src = getCharacterImage(selectedId, level);
         startBtn.style.display = "block";
     }
 
@@ -266,21 +350,32 @@ window.onload = function() {
     function startCountdown() {
         gameState = "COUNTDOWN";
         let count = 3;
-function drawPreGame() {
-            if (gameState !== "COUNTDOWN") return; // カウントダウンが終わったら終了
+        
+        function drawPreGame() {
+            if (gameState !== "COUNTDOWN") return;
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 背景を描く
             if (bgImg.complete) {
                 ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
             }
             
-            // プレイヤーを描く（サイズ160の設定を維持）
             if (playerImg.complete) {
+                const selectedId = localStorage.getItem('selectedCharacter');
+                const level = getCharacterLevel(selectedId);
+                const isMaxed = level >= 100;
+                
                 ctx.save();
-                ctx.shadowColor = "white";
-                ctx.shadowBlur = 10;
+                
+                if (isMaxed) {
+                    const time = Date.now() / 1000;
+                    ctx.shadowColor = `hsl(${(time * 180) % 360}, 100%, 70%)`;
+                    ctx.shadowBlur = 30;
+                } else {
+                    ctx.shadowColor = "white";
+                    ctx.shadowBlur = 10;
+                }
+                
                 const offset = (PLAYER_RENDER_SIZE - player.width) / 2;
                 ctx.drawImage(playerImg, player.x - offset, player.y - offset, PLAYER_RENDER_SIZE, PLAYER_RENDER_SIZE);
                 ctx.restore();
@@ -288,18 +383,17 @@ function drawPreGame() {
             
             requestAnimationFrame(drawPreGame);
         }
-        drawPreGame(); // 描画開始
+        
+        drawPreGame();
         countdownText.innerText = count;
+        
         const timer = setInterval(() => {
             count--;
             if (count <= 0) {
                 clearInterval(timer);
                 countdownText.innerText = "";
                 gameState = "PLAYING";
-                
-                // --- ここでPAUSEボタンを確実に表示する ---
                 if (pauseBtn) pauseBtn.style.display = "block"; 
-                
                 gameLoop();
             } else {
                 countdownText.innerText = count;
@@ -344,7 +438,7 @@ function drawPreGame() {
 
     async function handleGameOver(finalDist) {
         gameState = "GAMEOVER";
-        if (pauseBtn) pauseBtn.style.display = "none"; // 終了時は隠す
+        if (pauseBtn) pauseBtn.style.display = "none";
         const currentPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
         localStorage.setItem('totalPoints', (currentPoints + score).toString());
         
@@ -378,9 +472,21 @@ function drawPreGame() {
         }
 
         if (playerImg && playerImg.complete) {
+            const selectedId = localStorage.getItem('selectedCharacter');
+            const level = getCharacterLevel(selectedId);
+            const isMaxed = level >= 100;
+            
             ctx.save();
-            ctx.shadowColor = "white";
-            ctx.shadowBlur = 10;
+            
+            if (isMaxed) {
+                const time = Date.now() / 1000;
+                ctx.shadowColor = `hsl(${(time * 180) % 360}, 100%, 70%)`;
+                ctx.shadowBlur = 30;
+            } else {
+                ctx.shadowColor = "white";
+                ctx.shadowBlur = 10;
+            }
+            
             const offset = (PLAYER_RENDER_SIZE - player.width) / 2;
             ctx.drawImage(playerImg, player.x - offset, player.y - offset, PLAYER_RENDER_SIZE, PLAYER_RENDER_SIZE);
             ctx.restore();
