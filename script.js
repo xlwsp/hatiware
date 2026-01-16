@@ -198,7 +198,7 @@ window.onload = function() {
         resetGame();
     };
 
-    document.getElementById('gacha-btn').onclick = () => {
+    document.getElementById('pull-gacha-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
         gachaScreen.classList.remove('hidden');
         document.getElementById('gacha-result').classList.add('hidden');
