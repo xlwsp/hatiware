@@ -160,19 +160,37 @@ window.onload = function() {
         gachaScreen.classList.add('hidden');
         lockerScreen.classList.add('hidden');
         gameScreen.classList.add('hidden');
-        if (pauseMenu) pauseMenu.classList.add('hidden');
+
+        // PAUSEボタンの設定
+        if (pauseBtn) {
+            pauseBtn.onclick = () => {
+                if (gameState === "PLAYING") {
+                    gameState = "PAUSED";
+                    if (pauseMenu) pauseMenu.classList.remove('hidden');
+                }
+            };
+        }
+
+        // つづけるボタンの設定
+        if (resumeBtn) {
+            resumeBtn.onclick = () => {
+                if (gameState === "PAUSED") {
+                    gameState = "PLAYING";
+                    if (pauseMenu) pauseMenu.classList.add('hidden');
+                    gameLoop();
+                }
+            };
+        }
+
+        // BGMや表示の更新
         bgm.pause();
         bgm.currentTime = 0;
-        
         updatePointsDisplay();
         updateNameDisplay();
         checkMyGifts();
-    }
+    } // ← ここで showLobby をしっかり閉じる
 
-    
-    // --- ボタン設定の書き換え（ここから） ---
-
-    // ロビーの各ボタン
+    // --- ボタン設定 ---
     document.getElementById('play-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
@@ -216,66 +234,6 @@ window.onload = function() {
         };
     }
     // --- ボタン設定の書き換え（ここまで） ---
-
-    document.getElementById('pull-gacha-btn').addEventListener('click', () => {
-        const points = parseInt(localStorage.getItem('totalPoints')) || 0;
-        if (points < GACHA_COST) {
-            alert('ポイントが足りないよ！'); 
-            return;
-        }
-        
-        const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
-        const availableChars = CHARACTERS.filter(c => levels[c.id] < 100);
-        
-        if (availableChars.length === 0) {
-            alert('すべてのキャラが完凸済みだよ！');
-            return;
-        }
-
-        localStorage.setItem('totalPoints', (points - GACHA_COST).toString());
-        updatePointsDisplay();
-
-        const roll = Math.random() * 100;
-        let rarity = roll < 10 ? 'epic' : (roll < 40 ? 'rare' : 'common');
-        let pool = availableChars.filter(c => c.rarity === rarity);
-        
-        if (pool.length === 0) {
-            pool = availableChars;
-        }
-        
-        const result = pool[Math.floor(Math.random() * pool.length)];
-
-        const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters')) || ['tiikawa'];
-        const isNew = !unlocked.includes(result.id);
-        
-        if (isNew) {
-            unlocked.push(result.id);
-            localStorage.setItem('unlockedCharacters', JSON.stringify(unlocked));
-        }
-
-        const newLevel = addCharacterLevel(result.id, 20);
-        const isMaxed = newLevel >= 100;
-
-        document.getElementById('gacha-result-img').src = getCharacterImage(result.id, newLevel);
-        
-        let resultText = result.name;
-        if (isNew) resultText += ' (NEW!)';
-        
-        document.getElementById('gacha-result-name').innerHTML = `
-            ${resultText}
-            <div class="level-gauge-container">
-                <div class="level-gauge">
-                    <div class="level-gauge-fill" style="width: ${newLevel}%"></div>
-                </div>
-                <div class="level-text">${newLevel}% ${isMaxed ? '✨完凸✨' : ''}</div>
-            </div>
-        `;
-        
-        document.getElementById('gacha-result').classList.remove('hidden');
-    });
-
-    document.getElementById('back-from-gacha-btn').onclick = showLobby;
-    document.getElementById('back-from-locker-btn').onclick = showLobby;
 
     function renderLocker() {
         const grid = document.getElementById('character-grid');
