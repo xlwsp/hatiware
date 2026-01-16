@@ -32,7 +32,7 @@ window.onload = function() {
     // window.onload の中に追加（必要なら）
 const tickerText = document.querySelector('.news-ticker-text');
 if (tickerText) {
-    tickerText.innerText = "【アップデート】 ガチャがアップデートされました！ / 1000mをこえると、？？？の音楽が流れるようになりました！ 🌟";
+    tickerText.innerText = "【アップデート】 ガチャがアップデートされました！ / 1000mをこえると、？？？の音楽が流れるようになりました！ / ポイント配布を行えるようになりました！ / (制作者より)このゲームを遊んでくれて本当にありがとう；； 🌟";
 }
     // 初期化
     if (!localStorage.getItem('totalPoints')) localStorage.setItem('totalPoints', '0');
