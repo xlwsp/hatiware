@@ -150,7 +150,7 @@ window.onload = function() {
         let stage = 1;
         if (totalAmount >= 200) stage = 3;
         else if (totalAmount >= 100) stage = 2;
-        return `${charId}${stage}.png?v=${v}`;
+        return `images/${charId}${stage}.png?v=${v}`;
     }
 
     function addCharacterLevel(charId, amount = 20) {
@@ -275,17 +275,17 @@ if (exitBtn) {
             localStorage.setItem('characterLevels', JSON.stringify(levels));
 
             // 結果表示
+            // 結果表示
             const status = getCharacterLevel(result.id);
             const resultImgPath = getCharacterImage(result.id, status.totalAmount);
 
             const resultDiv = document.getElementById('gacha-result');
-            document.getElementById('gacha-result-img').src = resultImgPath;
-            document.getElementById('gacha-result-name').innerText = `${result.name} (Lv.${status.stage} ${status.percent}%)`;
-            resultDiv.classList.remove('hidden');
-
-            if (resultDiv && resultImg && resultName) {
-                resultImg.src = result.id + "1.png?v=" + v;
-                resultName.innerText = result.name;
+            const resultImgElement = document.getElementById('gacha-result-img');
+            const resultNameElement = document.getElementById('gacha-result-name');
+            
+            if (resultDiv && resultImgElement && resultNameElement) {
+                resultImgElement.src = resultImgPath; // 正しいフォルダ・正しいレベルの画像を表示
+                resultNameElement.innerText = `${result.name} (Lv.${status.stage} ${status.percent}%)`;
                 resultDiv.classList.remove('hidden');
             }
         };
@@ -339,7 +339,8 @@ if (exitBtn) {
             card.className = `character-card ${isUnlocked ? '' : 'locked'} ${isSelected ? 'selected' : ''}`;
             
             let nameDisplay = isUnlocked ? char.name : '???';
-            const imgSrc = isUnlocked ? getCharacterImage(char.id, status.totalAmount) : `${char.id}1.png?v=${v}`;
+            // 未解放キャラの画像にも images/ をつける
+            const imgSrc = isUnlocked ? getCharacterImage(char.id, status.totalAmount) : `images/${char.id}1.png?v=${v}`;
             
             // ★修正ポイント：表示テキストを Lv と % に分ける
             // 完凸(stage 3)なら MAX、それ以外は現在の段階の % を表示
