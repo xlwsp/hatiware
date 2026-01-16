@@ -155,7 +155,7 @@ window.onload = function() {
 
     function addCharacterLevel(charId, amount = 20) {
         const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
-        levels[charId] = Math.min(100, (levels[charId] || 0) + amount);
+        levels[charId] = Math.min(200, (levels[charId] || 0) + amount);
         localStorage.setItem('characterLevels', JSON.stringify(levels));
         return levels[charId];
     }
@@ -284,10 +284,11 @@ if (exitBtn) {
             const resultNameElement = document.getElementById('gacha-result-name');
             
             if (resultDiv && resultImgElement && resultNameElement) {
-                resultImgElement.src = resultImgPath; // 正しいフォルダ・正しいレベルの画像を表示
+                resultImgElement.src = resultImgPath;
                 resultNameElement.innerText = `${result.name} (Lv.${status.stage} ${status.percent}%)`;
                 resultDiv.classList.remove('hidden');
             }
+            
         };
     }
 
