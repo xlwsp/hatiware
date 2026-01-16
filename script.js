@@ -171,7 +171,12 @@ window.onload = function() {
                 }
             };
         }
-
+if (exitBtn) {
+    exitBtn.onclick = () => {
+        if (pauseMenu) pauseMenu.classList.add('hidden');
+        showLobby();
+    };
+}
         // つづけるボタンの設定
         if (resumeBtn) {
             resumeBtn.onclick = () => {
@@ -199,12 +204,52 @@ window.onload = function() {
         resetGame();
     };
 
-    document.getElementById('pull-gacha-btn').onclick = () => {
+    // 1. ロビーにある「ガチャ画面へ行く」ボタン
+    document.getElementById('gacha-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
         gachaScreen.classList.remove('hidden');
         document.getElementById('gacha-result').classList.add('hidden');
         updatePointsDisplay();
     };
+
+    // 2. ガチャ画面にある「実際に引く」ボタン
+    if (pullGachaBtn) {
+        pullGachaBtn.onclick = () => {
+            let currentPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
+            if (currentPoints < GACHA_COST) {
+                alert("ポイントが足りないよ！");
+                return;
+            }
+
+            // ポイント消費と保存
+            currentPoints -= GACHA_COST;
+            localStorage.setItem('totalPoints', currentPoints.toString());
+            updatePointsDisplay();
+
+            // キャラ抽選ロジック
+            const rand = Math.random();
+            let rarity = rand < 0.1 ? 'epic' : (rand < 0.3 ? 'rare' : 'common');
+            const pool = CHARACTERS.filter(c => c.rarity === rarity);
+            const result = pool[Math.floor(Math.random() * pool.length)];
+
+            // キャラ解放とレベルアップ
+            let unlocked = JSON.parse(localStorage.getItem('unlockedCharacters')) || ['tiikawa'];
+            if (!unlocked.includes(result.id)) unlocked.push(result.id);
+            localStorage.setItem('unlockedCharacters', JSON.stringify(unlocked));
+            addCharacterLevel(result.id, 20);
+
+            // ガチャ結果の表示（HTMLの要素を直接操作）
+            const resultDiv = document.getElementById('gacha-result');
+            const resultImg = document.getElementById('gacha-result-img');
+            const resultName = document.getElementById('gacha-result-name');
+            
+            if (resultDiv && resultImg && resultName) {
+                resultImg.src = result.id + "1.png?v=" + v;
+                resultName.innerText = result.name;
+                resultDiv.classList.remove('hidden');
+            }
+        };
+    }
 
     document.getElementById('locker-btn').onclick = () => {
         lobbyScreen.classList.add('hidden');
