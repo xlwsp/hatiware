@@ -16,12 +16,12 @@ const db = firebase.firestore();
 const CHARACTERS = [
     { id: 'tiikawa', name: 'ちいかわ', rarity: 'common' },
     { id: 'hatiware', name: 'ハチワレ', rarity: 'common' },
-    { id: 'usagi', name: 'うさぎ', rarity: 'rare' },
+    { id: 'usagi', name: 'うさぎ', rarity: 'common' },
     { id: 'kurimanju', name: 'くりまんじゅう', rarity: 'common' },
-    { id: 'rakko', name: 'ラッコ', rarity: 'rare' },
-    { id: 'momonga', name: 'モモンガ', rarity: 'epic' },
+    { id: 'rakko', name: 'ラッコ', rarity: 'common' },
+    { id: 'momonga', name: 'モモンガ', rarity: 'common' },
     { id: 'kani', name: 'カニ', rarity: 'common' },
-    { id: 'si-sa-', name: 'シーサー', rarity: 'epic' }
+    { id: 'si-sa-', name: 'シーサー', rarity: 'common' }
 ];
 
 const GACHA_COST = 500;
@@ -124,9 +124,33 @@ window.onload = function() {
         }
     }
 
+    // キャラの現在の「段階(1,2,3)」と「その段階内での%」を取得
     function getCharacterLevel(charId) {
         const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
-        return levels[charId] || 0;
+        const totalAmount = levels[charId] || 0;
+        
+        let stage = 1;
+        let percent = 0;
+
+        if (totalAmount >= 200) {
+            stage = 3; // 完凸
+            percent = 100;
+        } else if (totalAmount >= 100) {
+            stage = 2;
+            percent = totalAmount - 100;
+        } else {
+            stage = 1;
+            percent = totalAmount;
+        }
+        return { stage, percent, totalAmount };
+    }
+
+    // 画像の段階（1, 2, 3）を返す
+    function getCharacterImage(charId, totalAmount) {
+        let stage = 1;
+        if (totalAmount >= 200) stage = 3;
+        else if (totalAmount >= 100) stage = 2;
+        return `${charId}${stage}.png?v=${v}`;
     }
 
     function addCharacterLevel(charId, amount = 20) {
@@ -136,12 +160,8 @@ window.onload = function() {
         return levels[charId];
     }
 
-    function getCharacterImage(charId, level) {
-        let stage = 1;
-        if (level >= 67) stage = 3;
-        else if (level >= 34) stage = 2;
-        return `${charId}${stage}.png?v=${v}`;
-    }
+    
+    
 
     function updatePointsDisplay() {
         const points = parseInt(localStorage.getItem('totalPoints')) || 0;
@@ -221,27 +241,47 @@ if (exitBtn) {
                 return;
             }
 
-            // ポイント消費と保存
+            // --- ここが重要：レベル3（合計200ポイント以上）以外のキャラを抽出 ---
+            const levels = JSON.parse(localStorage.getItem('characterLevels')) || {};
+            const availablePool = CHARACTERS.filter(c => (levels[c.id] || 0) < 200);
+
+            if (availablePool.length === 0) {
+                alert("すべてのキャラが完凸（レベル3）になりました！");
+                return;
+            }
+
+            // ポイント消費
             currentPoints -= GACHA_COST;
             localStorage.setItem('totalPoints', currentPoints.toString());
             updatePointsDisplay();
 
-            // キャラ抽選ロジック
+            // 利用可能なプールからレアリティ別に抽選
             const rand = Math.random();
-            let rarity = rand < 0.1 ? 'epic' : (rand < 0.3 ? 'rare' : 'common');
-            const pool = CHARACTERS.filter(c => c.rarity === rarity);
+            let targetRarity = rand < 0.1 ? 'epic' : (rand < 0.3 ? 'rare' : 'common');
+            
+            let pool = availablePool.filter(c => c.rarity === targetRarity);
+            // もしそのレアリティに空きがなければ、全利用可能キャラから選ぶ
+            if (pool.length === 0) pool = availablePool;
+
             const result = pool[Math.floor(Math.random() * pool.length)];
 
-            // キャラ解放とレベルアップ
+            // 解放とポイント加算（1回のガチャで+20%）
             let unlocked = JSON.parse(localStorage.getItem('unlockedCharacters')) || ['tiikawa'];
             if (!unlocked.includes(result.id)) unlocked.push(result.id);
             localStorage.setItem('unlockedCharacters', JSON.stringify(unlocked));
-            addCharacterLevel(result.id, 20);
+            
+            // レベルアップ処理（最大200まで）
+            levels[result.id] = Math.min(200, (levels[result.id] || 0) + 20);
+            localStorage.setItem('characterLevels', JSON.stringify(levels));
 
-            // ガチャ結果の表示（HTMLの要素を直接操作）
+            // 結果表示
+            const status = getCharacterLevel(result.id);
+            const resultImgPath = getCharacterImage(result.id, status.totalAmount);
+
             const resultDiv = document.getElementById('gacha-result');
-            const resultImg = document.getElementById('gacha-result-img');
-            const resultName = document.getElementById('gacha-result-name');
+            document.getElementById('gacha-result-img').src = resultImgPath;
+            document.getElementById('gacha-result-name').innerText = `${result.name} (Lv.${status.stage} ${status.percent}%)`;
+            resultDiv.classList.remove('hidden');
             
             if (resultDiv && resultImg && resultName) {
                 resultImg.src = result.id + "1.png?v=" + v;
