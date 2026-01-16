@@ -59,6 +59,7 @@ window.onload = function() {
     const ctx = canvas.getContext("2d");
     const scoreElement = document.getElementById("score");
     const startBtn = document.getElementById("start-btn");
+    const pullGachaBtn = document.getElementById("pull-gacha-btn");
     const pauseBtn = document.getElementById("pause-btn");
     const resumeBtn = document.getElementById("resume-btn");
     const exitBtn = document.getElementById("exit-btn");
