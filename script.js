@@ -46,7 +46,14 @@ window.onload = function() {
 
     const bgm = new Audio('bgm.mp3');
     bgm.loop = true;
-    bgm.volume = 0.5;
+    bgm.volume = 0.2; // 0.2 に変更
+
+    // 1500mからの曲を追加したなら、こちらも合わせて変更
+    const feverBgm = new Audio('fever.mp3');
+    feverBgm.loop = true;
+    feverBgm.volume = 0.2;
+
+let isFever = false; // 今どちらの曲か判定するフラグ
 
     const lobbyScreen = document.getElementById('lobby-screen');
     const gachaScreen = document.getElementById('gacha-screen');
@@ -174,7 +181,31 @@ window.onload = function() {
         const playerName = localStorage.getItem('playerName') || 'Player';
         if (nameElement) nameElement.textContent = playerName;
     }
+function crossFade(outAudio, inAudio, duration = 2000) {
+        const steps = 20; // 変化させる回数
+        const interval = duration / steps;
+        const initialVolume = outAudio.volume; // 現在の音量を基準にする
+        let step = 0;
 
+        inAudio.volume = 0;
+        inAudio.play().catch(e => console.log("再生エラー:", e));
+
+        const timer = setInterval(() => {
+            step++;
+            // 音量を徐々に変化させる
+            outAudio.volume = Math.max(0, initialVolume * (1 - step / steps));
+            inAudio.volume = Math.min(initialVolume, initialVolume * (step / steps));
+
+            if (step >= steps) {
+                clearInterval(timer);
+                outAudio.pause();
+                outAudio.currentTime = 0;
+                // 最後に音量をしっかり固定
+                outAudio.volume = initialVolume;
+                inAudio.volume = initialVolume;
+            }
+        }, interval);
+    }
     function showLobby() {
         gameState = "LOBBY";
         lobbyScreen.classList.remove('hidden');
@@ -383,6 +414,10 @@ if (exitBtn) {
         playerImg = new Image();
         playerImg.src = getCharacterImage(selectedId, level);
         startBtn.style.display = "block";
+        isFever = false;
+        feverBgm.pause();
+        feverBgm.currentTime = 0;
+        bgm.currentTime = 0;
     }
 
     startBtn.onclick = () => {
@@ -413,8 +448,9 @@ if (exitBtn) {
             
             if (playerImg.complete) {
                 const selectedId = localStorage.getItem('selectedCharacter');
-                const level = getCharacterLevel(selectedId);
-                const isMaxed = level >= 100;
+                const levelStatus = getCharacterLevel(selectedId);
+            const isMaxed = levelStatus.totalAmount >= 200; 
+            playerImg.src = getCharacterImage(selectedId, levelStatus.totalAmount);
                 
                 ctx.save();
                 
@@ -569,6 +605,12 @@ if (exitBtn) {
             }
         }
         distance += 0.2;
+        // 1500mを超えたら曲を切り替える
+        if (distance >= 1000 && !isFever) {
+            isFever = true;
+            crossFade(bgm, feverBgm, 3000); // 3秒かけてじわっと切り替え
+            console.log("FEVER TIME!"); 
+        }
         scoreElement.innerText = `SCORE: ${score} | DIST: ${Math.floor(distance)}m`;
         requestAnimationFrame(gameLoop);
     }
